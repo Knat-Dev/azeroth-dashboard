@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AdminService } from './admin.service.js';
 import { SoapService } from './soap.service.js';
+import { DockerService } from '../docker/docker.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -25,6 +26,7 @@ export class AdminController {
   constructor(
     private adminService: AdminService,
     private soapService: SoapService,
+    private dockerService: DockerService,
   ) {}
 
   @Get('stats')
@@ -76,10 +78,12 @@ export class AdminController {
   }
 
   @Post('command')
-  executeCommand(
-    @CurrentUser() user: { id: number; username: string },
-    @Body() body: { command: string },
-  ) {
-    return this.soapService.executeCommand(body.command, user.id, user.username);
+  executeCommand(@Body() body: { command: string }) {
+    return this.soapService.executeCommand(body.command);
+  }
+
+  @Post('restart/:container')
+  restartContainer(@Param('container') container: string) {
+    return this.dockerService.restartContainer(container);
   }
 }

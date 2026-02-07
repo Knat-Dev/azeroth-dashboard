@@ -1,22 +1,16 @@
 import {
   Injectable,
   UnauthorizedException,
-  ConflictException,
-  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Account } from '../../entities/auth/account.entity.js';
 import { AccountAccess } from '../../entities/auth/account-access.entity.js';
-import {
-  makeRegistrationData,
-  checkPassword,
-} from './srp6.util.js';
-import { CredentialCacheService } from './credential-cache.service.js';
+import { checkPassword } from './srp6.util.js';
 
-const MAX_ACCOUNT_STR = 17;
-const MAX_PASS_STR = 16;
+const MIN_GM_LEVEL = 3;
 
 @Injectable()
 export class AuthService {
@@ -26,42 +20,7 @@ export class AuthService {
     @InjectRepository(AccountAccess, 'auth')
     private accountAccessRepo: Repository<AccountAccess>,
     private jwtService: JwtService,
-    private credentialCache: CredentialCacheService,
   ) {}
-
-  async register(username: string, password: string, email?: string) {
-    if (username.length > MAX_ACCOUNT_STR) {
-      throw new BadRequestException('Username too long (max 17 characters)');
-    }
-    if (password.length > MAX_PASS_STR) {
-      throw new BadRequestException('Password too long (max 16 characters)');
-    }
-
-    const upperUsername = username.toUpperCase();
-
-    const existing = await this.accountRepo.findOne({
-      where: { username: upperUsername },
-    });
-    if (existing) {
-      throw new ConflictException('Account already exists');
-    }
-
-    const { salt, verifier } = makeRegistrationData(username, password);
-
-    const account = this.accountRepo.create({
-      username: upperUsername,
-      salt,
-      verifier,
-      email: email?.toUpperCase() ?? '',
-      regMail: email?.toUpperCase() ?? '',
-      expansion: 2,
-    });
-
-    await this.accountRepo.save(account);
-    this.credentialCache.store(account.id, password);
-
-    return this.buildAuthResponse(account, 0);
-  }
 
   async login(username: string, password: string) {
     const upperUsername = username.toUpperCase();
@@ -78,7 +37,12 @@ export class AuthService {
     }
 
     const gmLevel = await this.getGmLevel(account.id);
-    this.credentialCache.store(account.id, password);
+
+    if (gmLevel < MIN_GM_LEVEL) {
+      throw new ForbiddenException(
+        'Insufficient privileges. Only GM accounts (level 3+) can access the dashboard.',
+      );
+    }
 
     return this.buildAuthResponse(account, gmLevel);
   }

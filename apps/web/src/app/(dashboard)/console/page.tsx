@@ -3,7 +3,7 @@
 import { api, API_URL } from "@/lib/api";
 import { getStoredToken } from "@/lib/auth";
 import Convert from "ansi-to-html";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 const convert = new Convert({
   fg: "#d4d4d4",
@@ -45,7 +45,27 @@ const CONTAINER_LABELS: Record<string, string> = {
   "ac-authserver": "Authserver",
 };
 
-// Pre-rendered line: stores both raw key and converted HTML
+const HISTORY_KEY = "soap-command-history";
+const MAX_HISTORY = 50;
+
+function loadHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(history: string[]) {
+  localStorage.setItem(
+    HISTORY_KEY,
+    JSON.stringify(history.slice(-MAX_HISTORY)),
+  );
+}
+
 interface Line {
   id: number;
   html: string;
@@ -63,7 +83,6 @@ const LogLine = memo(function LogLine({ html }: { html: string }) {
 let lineIdCounter = 0;
 
 export default function ConsolePage() {
-  // Optimistic defaults — show tabs immediately, assume connected
   const [containers, setContainers] = useState<ContainerInfo[]>([
     { name: "ac-worldserver", state: "running", status: "" },
     { name: "ac-authserver", state: "running", status: "" },
@@ -77,9 +96,22 @@ export default function ConsolePage() {
   const [autoScroll, setAutoScroll] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null);
   const termRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const maxLines = 2000;
 
-  // Fetch real container states in background (tabs already shown optimistically)
+  // Command history
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [savedInput, setSavedInput] = useState("");
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    setHistory(loadHistory());
+  }, []);
+
+  const isWorldserver = activeContainer === "ac-worldserver";
+
+  // Fetch real container states in background
   useEffect(() => {
     api
       .get<ContainerInfo[]>("/admin/logs/containers")
@@ -89,7 +121,6 @@ export default function ConsolePage() {
       .catch(() => {});
   }, []);
 
-  // With flex-col-reverse, scrollTop=0 is the bottom (newest).
   useEffect(() => {
     if (autoScroll && termRef.current) {
       termRef.current.scrollTop = 0;
@@ -102,8 +133,7 @@ export default function ConsolePage() {
     setAutoScroll(atBottom);
   }
 
-  // Append pre-converted lines
-  function pushLines(...rawLines: string[]) {
+  const pushLines = useCallback((...rawLines: string[]) => {
     const newLines: Line[] = rawLines.map((raw) => ({
       id: lineIdCounter++,
       html: toHtml(raw),
@@ -112,7 +142,7 @@ export default function ConsolePage() {
       const next = [...prev, ...newLines];
       return next.length > maxLines ? next.slice(-maxLines) : next;
     });
-  }
+  }, []);
 
   // Connect to SSE stream when active container changes
   useEffect(() => {
@@ -170,13 +200,19 @@ export default function ConsolePage() {
       es.close();
       eventSourceRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeContainer]);
+  }, [activeContainer, pushLines]);
 
   async function handleCommand(e: React.FormEvent) {
     e.preventDefault();
     const cmd = command.trim();
     if (!cmd) return;
+
+    // Push to history
+    const newHistory = [...history.filter((h) => h !== cmd), cmd];
+    setHistory(newHistory);
+    saveHistory(newHistory);
+    setHistoryIndex(-1);
+    setSavedInput("");
 
     setExecuting(true);
     try {
@@ -193,6 +229,36 @@ export default function ConsolePage() {
       pushLines(`\x1b[31m> ${cmd}\x1b[0m`, `\x1b[31m${msg}\x1b[0m`);
     } finally {
       setExecuting(false);
+      inputRef.current?.focus();
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (history.length === 0) return;
+
+      if (historyIndex === -1) {
+        setSavedInput(command);
+      }
+
+      const newIndex = historyIndex === -1
+        ? history.length - 1
+        : Math.max(0, historyIndex - 1);
+      setHistoryIndex(newIndex);
+      setCommand(history[newIndex] ?? "");
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex === -1) return;
+
+      if (historyIndex >= history.length - 1) {
+        setHistoryIndex(-1);
+        setCommand(savedInput);
+      } else {
+        const newIndex = historyIndex + 1;
+        setHistoryIndex(newIndex);
+        setCommand(history[newIndex] ?? "");
+      }
     }
   }
 
@@ -318,28 +384,41 @@ export default function ConsolePage() {
           )}
         </div>
 
-        {/* Command input */}
-        <form
-          onSubmit={handleCommand}
-          className="flex items-center gap-2 border-t border-border/50 bg-[#13141c] px-4 py-2.5"
-        >
-          <span className="font-mono text-sm text-primary">$</span>
-          <input
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            className="flex-1 bg-transparent font-mono text-sm text-[#d4d4d4] placeholder:text-muted-foreground/50 focus:outline-none"
-            placeholder="Type a SOAP command (e.g. .server info, .announce Hello)"
-            disabled={executing}
-          />
-          <button
-            type="submit"
-            disabled={executing || !command.trim()}
-            className="rounded bg-primary/20 px-3 py-1 font-mono text-xs text-primary hover:bg-primary/30 disabled:opacity-30 transition-colors"
+        {/* Command input — only for worldserver */}
+        {isWorldserver ? (
+          <form
+            onSubmit={handleCommand}
+            className="flex items-center gap-2 border-t border-border/50 bg-[#13141c] px-4 py-2.5"
           >
-            {executing ? "..." : "Send"}
-          </button>
-        </form>
+            <span className="font-mono text-sm text-primary">$</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={command}
+              onChange={(e) => {
+                setCommand(e.target.value);
+                setHistoryIndex(-1);
+              }}
+              onKeyDown={handleKeyDown}
+              className="flex-1 bg-transparent font-mono text-sm text-[#d4d4d4] placeholder:text-muted-foreground/50 focus:outline-none"
+              placeholder="Type a SOAP command (e.g. .server info) — ↑↓ for history"
+              disabled={executing}
+            />
+            <button
+              type="submit"
+              disabled={executing || !command.trim()}
+              className="rounded bg-primary/20 px-3 py-1 font-mono text-xs text-primary hover:bg-primary/30 disabled:opacity-30 transition-colors"
+            >
+              {executing ? "..." : "Send"}
+            </button>
+          </form>
+        ) : (
+          <div className="border-t border-border/50 bg-[#13141c] px-4 py-2.5">
+            <span className="font-mono text-xs text-muted-foreground/50">
+              SOAP commands are only available on the Worldserver tab
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

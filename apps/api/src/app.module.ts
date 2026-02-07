@@ -8,6 +8,8 @@ import { CharactersModule } from './modules/characters/characters.module.js';
 import { GuildsModule } from './modules/guilds/guilds.module.js';
 import { ServerModule } from './modules/server/server.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { DockerModule } from './modules/docker/docker.module.js';
+import { MonitorModule } from './modules/monitor/monitor.module.js';
 
 // Auth DB entities
 import { Account } from './entities/auth/account.entity.js';
@@ -102,6 +104,8 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
     GuildsModule,
     ServerModule,
     AdminModule,
+    DockerModule,
+    MonitorModule,
   ],
 })
 export class AppModule {}

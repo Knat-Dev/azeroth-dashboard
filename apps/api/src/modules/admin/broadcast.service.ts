@@ -15,15 +15,13 @@ export class BroadcastService {
   async sendBroadcast(
     message: string,
     type: 'announce' | 'notify' | 'both',
-    userId: number,
-    username: string,
   ) {
     const results = [];
     if (type === 'announce' || type === 'both') {
-      results.push(await this.soapService.executeCommand(`.announce ${message}`, userId, username));
+      results.push(await this.soapService.executeCommand(`.announce ${message}`));
     }
     if (type === 'notify' || type === 'both') {
-      results.push(await this.soapService.executeCommand(`.notify ${message}`, userId, username));
+      results.push(await this.soapService.executeCommand(`.notify ${message}`));
     }
     return results;
   }
@@ -50,7 +48,7 @@ export class BroadcastService {
     return { message: 'Autobroadcast deleted' };
   }
 
-  async reloadAutobroadcast(userId: number, username: string) {
-    return this.soapService.executeCommand('.reload autobroadcast', userId, username);
+  async reloadAutobroadcast() {
+    return this.soapService.executeCommand('.reload autobroadcast');
   }
 }

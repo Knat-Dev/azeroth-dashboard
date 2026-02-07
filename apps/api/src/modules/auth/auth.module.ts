@@ -6,7 +6,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtStrategy } from './jwt.strategy.js';
-import { CredentialCacheService } from './credential-cache.service.js';
 import { Account } from '../../entities/auth/account.entity.js';
 import { AccountAccess } from '../../entities/auth/account-access.entity.js';
 
@@ -26,7 +25,7 @@ import { AccountAccess } from '../../entities/auth/account-access.entity.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, CredentialCacheService],
-  exports: [AuthService, JwtModule, CredentialCacheService],
+  providers: [AuthService, JwtStrategy],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

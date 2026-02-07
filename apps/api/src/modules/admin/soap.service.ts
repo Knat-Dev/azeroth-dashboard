@@ -1,34 +1,25 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { CredentialCacheService } from '../auth/credential-cache.service.js';
 
 @Injectable()
 export class SoapService {
   private readonly logger = new Logger(SoapService.name);
   private readonly host: string;
   private readonly port: number;
+  private readonly username: string;
+  private readonly password: string;
 
-  constructor(
-    private configService: ConfigService,
-    private credentialCache: CredentialCacheService,
-  ) {
+  constructor(private configService: ConfigService) {
     this.host = configService.get<string>('soap.host', 'localhost');
     this.port = configService.get<number>('soap.port', 7878);
+    this.username = configService.get<string>('soap.user', 'admin');
+    this.password = configService.get<string>('soap.password', 'admin');
   }
 
   async executeCommand(
     command: string,
-    userId: number,
-    username: string,
   ): Promise<{ success: boolean; message: string }> {
-    const password = this.credentialCache.retrieve(userId);
-    if (!password) {
-      throw new UnauthorizedException(
-        'Session expired. Please log out and log back in to use SOAP commands.',
-      );
-    }
-
     const url = `http://${this.host}:${this.port}/`;
 
     const envelope = `<?xml version="1.0" encoding="utf-8"?>
@@ -44,7 +35,7 @@ export class SoapService {
     try {
       const response = await axios.post(url, envelope, {
         headers: { 'Content-Type': 'text/xml; charset=utf-8' },
-        auth: { username, password },
+        auth: { username: this.username, password: this.password },
         timeout: 10000,
       });
 

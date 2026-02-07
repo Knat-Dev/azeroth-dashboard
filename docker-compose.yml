@@ -16,6 +16,8 @@ services:
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-password}
       - SOAP_HOST=${SOAP_HOST:-ac-worldserver}
       - SOAP_PORT=${SOAP_PORT:-7878}
+      - SOAP_USER=${SOAP_USER:-admin}
+      - SOAP_PASSWORD=${SOAP_PASSWORD:-admin}
       - JWT_SECRET=${JWT_SECRET:-change-me}
       - CORS_ORIGIN=http://localhost:${DASHBOARD_PORT:-7780}
       - PORT=3001

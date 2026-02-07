@@ -4,38 +4,66 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
-import { isAdmin } from "@/lib/auth";
 import {
   Home,
-  Users,
-  Swords,
-  Shield,
-  Search,
-  Settings,
   Terminal,
+  Database,
+  Users,
   UserCog,
   Ban,
-  Radio,
-  Database,
+  Settings,
   LogOut,
 } from "lucide-react";
 
-const navItems = [
+const opsItems = [
   { href: "/", label: "Dashboard", icon: Home },
-  { href: "/characters", label: "My Characters", icon: Swords },
-  { href: "/guilds", label: "Guilds", icon: Shield },
-  { href: "/armory", label: "Armory Search", icon: Search },
-  { href: "/account", label: "Account", icon: Settings },
+  { href: "/console", label: "Console", icon: Terminal },
+  { href: "/backups", label: "Backups", icon: Database },
 ];
 
-const adminItems = [
-  { href: "/admin", label: "Admin Overview", icon: Home },
-  { href: "/admin/accounts", label: "Accounts", icon: UserCog },
-  { href: "/admin/bans", label: "Bans", icon: Ban },
-  { href: "/admin/console", label: "Console", icon: Terminal },
-  { href: "/admin/broadcast", label: "Broadcast", icon: Radio },
-  { href: "/admin/backups", label: "Backups", icon: Database },
+const mgmtItems = [
+  { href: "/accounts", label: "Accounts", icon: UserCog },
+  { href: "/bans", label: "Bans", icon: Ban },
 ];
+
+const systemItems = [
+  { href: "/settings", label: "Settings", icon: Settings },
+];
+
+function NavSection({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: { href: string; label: string; icon: typeof Home }[];
+  pathname: string;
+}) {
+  return (
+    <div className="mb-6">
+      <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <div className="space-y-1">
+        {items.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+              pathname === item.href
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            )}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -54,59 +82,18 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                pathname === item.href
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          ))}
-        </div>
-
-        {isAdmin(user) && (
-          <div className="mt-6">
-            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Admin
-            </p>
-            <div className="space-y-1">
-              {adminItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                    pathname === item.href
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        <NavSection label="Operations" items={opsItems} pathname={pathname} />
+        <NavSection label="Management" items={mgmtItems} pathname={pathname} />
+        <NavSection label="System" items={systemItems} pathname={pathname} />
       </nav>
 
       <div className="border-t border-border px-3 py-4">
         <div className="flex items-center justify-between px-3">
           <div>
             <p className="text-sm font-medium text-foreground">
-              {user?.username ?? "Guest"}
+              {user?.username ?? "Admin"}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {user?.gmLevel && user.gmLevel >= 3 ? "Admin" : "Player"}
-            </p>
+            <p className="text-xs text-muted-foreground">Administrator</p>
           </div>
           <button
             onClick={logout}

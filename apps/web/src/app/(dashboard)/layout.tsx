@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { Sidebar } from "@/components/layout/sidebar";
+import { HealthBar } from "@/components/layout/health-bar";
 
 export default function DashboardLayout({
   children,
@@ -32,7 +33,10 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
-      <main className="flex flex-1 flex-col overflow-y-auto p-6">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <HealthBar />
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      </div>
     </div>
   );
 }

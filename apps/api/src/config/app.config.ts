@@ -6,6 +6,8 @@ export default () => ({
   soap: {
     host: process.env.SOAP_HOST ?? 'localhost',
     port: parseInt(process.env.SOAP_PORT ?? '7878', 10),
+    user: process.env.SOAP_USER ?? 'admin',
+    password: process.env.SOAP_PASSWORD ?? 'admin',
   },
   backup: {
     retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS ?? '30', 10),

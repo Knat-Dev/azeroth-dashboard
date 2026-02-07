@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAuth } from "@/providers/auth-provider";
 
 export default function LoginPage() {
@@ -84,10 +83,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-primary hover:underline">
-            Register
-          </Link>
+          Sign in with your WoW GM account
         </p>
       </div>
     </div>
