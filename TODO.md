@@ -271,28 +271,31 @@
 
 ### 3.2 Online Players Endpoint
 
-- [ ] Add `GET /api/server/players` to server controller
-- [ ] Query: `SELECT guid, name, level, class, race, zone FROM characters WHERE online=1`
-- [ ] Map zone IDs to zone names (need zone name mapping — can be static const)
-- [ ] Return array of player objects with class colors
+- [x] Add `GET /api/server/players` to server controller
+- [x] Query: `SELECT guid, name, level, class, race, zone FROM characters WHERE online=1`
+- [x] Zone/class/race name mapping via frontend constants (`wow-constants.ts`)
+- [x] Return array of player objects
 
 ### 3.3 Players Page (Frontend)
 
-- [ ] Create `(dashboard)/players/page.tsx`
-- [ ] Fetch online players from API
-- [ ] Render as table: Name, Level, Class (with color), Race, Zone
-- [ ] Auto-refresh every 30s
-- [ ] Empty state: "No players online"
-- [ ] Loading spinner
+- [x] Create `(dashboard)/players/page.tsx`
+- [x] Fetch online players from API
+- [x] Render as table: Name, Level, Class (with color), Race, Faction, Zone
+- [x] Auto-refresh every 30s
+- [x] Empty state: "No players online"
+- [x] Loading spinner
+- [x] Add Players link to sidebar navigation
 
 ### 3.4 Player Count Chart
 
-- [ ] Add `recharts` dependency to frontend
-- [ ] Dashboard page: add player count chart section
-- [ ] Fetch player history from API
-- [ ] Render as line chart with time on X axis, count on Y axis
-- [ ] Toggle: 24h / 7d / 30d
-- [ ] Handle no data gracefully
+- [x] Add `highcharts` + `highcharts-react-official` dependencies to frontend
+- [x] Create `components/dashboard/player-chart.tsx`
+- [x] Dashboard page: add player count chart section
+- [x] Fetch player history from API
+- [x] Render as areaspline chart with time on X axis, count on Y axis
+- [x] Highcharts dark theme styling (gold accent, transparent bg)
+- [x] Toggle: 24h / 7d / 30d
+- [x] Handle no data gracefully
 
 ### 3.5 Final Phase 3 Checks
 
@@ -300,7 +303,7 @@
 - [ ] Test: players page shows online characters
 - [ ] Test: chart renders with real data
 - [ ] Test: chart handles empty data
-- [ ] Build passes
+- [x] Build passes
 
 ---
 

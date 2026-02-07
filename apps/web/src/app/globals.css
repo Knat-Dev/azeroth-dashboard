@@ -56,3 +56,7 @@ body {
 * {
   border-color: var(--color-border);
 }
+
+button, [role="button"], a {
+  cursor: pointer;
+}

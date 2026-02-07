@@ -55,4 +55,10 @@ export class ServerController {
       : '24h';
     return this.eventService.getPlayerHistory(r);
   }
+
+  @Get('players')
+  @UseGuards(JwtAuthGuard)
+  getOnlinePlayers() {
+    return this.serverService.getOnlinePlayers();
+  }
 }

@@ -57,4 +57,11 @@ export class ServerService {
   async getRealms() {
     return this.realmRepo.find();
   }
+
+  async getOnlinePlayers() {
+    return this.characterRepo.find({
+      where: { online: 1 },
+      select: ['guid', 'name', 'level', 'class', 'race', 'gender', 'zone', 'map'],
+    });
+  }
 }

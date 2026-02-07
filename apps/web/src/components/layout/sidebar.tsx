@@ -7,15 +7,20 @@ import {
   Database,
   Home,
   LogOut,
+  Pin,
+  PinOff,
   Settings,
   Terminal,
-  UserCog
+  UserCog,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 const opsItems = [
   { href: "/", label: "Dashboard", icon: Home },
+  { href: "/players", label: "Players", icon: Users },
   { href: "/console", label: "Console", icon: Terminal },
   { href: "/backups", label: "Backups", icon: Database },
 ];
@@ -29,34 +34,46 @@ const systemItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+const fadeText = (expanded: boolean) =>
+  cn("whitespace-nowrap transition-opacity duration-200", expanded ? "opacity-100" : "opacity-0");
+
 function NavSection({
   label,
   items,
   pathname,
+  expanded,
 }: {
   label: string;
   items: { href: string; label: string; icon: typeof Home }[];
   pathname: string;
+  expanded: boolean;
 }) {
   return (
-    <div className="mb-6">
-      <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <div className="space-y-1">
+    <div className="mb-3">
+      <div className="mb-1.5 px-4 flex items-center h-4">
+        {expanded ? (
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {label}
+          </p>
+        ) : (
+          <div className="w-full border-t border-border" />
+        )}
+      </div>
+      <div className="space-y-0.5">
         {items.map((item) => (
           <Link
             key={item.href}
             href={item.href}
+            title={!expanded ? item.label : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+              "flex items-center gap-3 rounded-lg px-4 py-2 text-sm transition-colors",
               pathname === item.href
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground",
             )}
           >
-            <item.icon className="h-4 w-4" />
-            {item.label}
+            <item.icon className="h-4 w-4 shrink-0" />
+            <span className={fadeText(expanded)}>{item.label}</span>
           </Link>
         ))}
       </div>
@@ -64,42 +81,116 @@ function NavSection({
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  expanded,
+  pinned,
+  onTogglePin,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  expanded: boolean;
+  pinned: boolean;
+  onTogglePin: () => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    if (userMenuOpen) {
+      document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }
+  }, [userMenuOpen]);
+
+  // Close user menu when sidebar collapses
+  useEffect(() => {
+    if (!expanded) setUserMenuOpen(false);
+  }, [expanded]);
 
   return (
-    <aside className="flex h-screen w-64 flex-col bg-card border-r border-border">
-      <div className="flex items-center gap-2 border-b border-border px-6 py-4">
-        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+    <aside
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className={cn(
+        "flex h-screen flex-col overflow-hidden bg-card border-r border-border transition-all duration-200 z-40",
+        pinned ? "relative" : "fixed left-0 top-0",
+        expanded ? "w-56" : "w-16",
+      )}
+    >
+      {/* Logo + Pin */}
+      <div className="relative flex items-center border-b border-border px-4 py-4">
+        <div className="h-8 w-8 shrink-0 rounded-lg bg-primary flex items-center justify-center">
           <span className="text-primary-foreground font-bold text-sm">AC</span>
         </div>
-        <div>
+        <div className={cn("ml-2 min-w-0", fadeText(expanded))}>
           <h1 className="text-sm font-semibold text-foreground">Azeroth Dashboard</h1>
           <p className="text-xs text-muted-foreground">WoTLK 3.3.5a</p>
         </div>
+        <button
+          onClick={onTogglePin}
+          title={pinned ? "Unpin sidebar" : "Pin sidebar"}
+          className={cn(
+            "absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200",
+            expanded ? "opacity-100" : "opacity-0 pointer-events-none",
+          )}
+        >
+          {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+        </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <NavSection label="Operations" items={opsItems} pathname={pathname} />
-        <NavSection label="Management" items={mgmtItems} pathname={pathname} />
-        <NavSection label="System" items={systemItems} pathname={pathname} />
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4">
+        <NavSection label="Operations" items={opsItems} pathname={pathname} expanded={expanded} />
+        <NavSection label="Management" items={mgmtItems} pathname={pathname} expanded={expanded} />
+        <NavSection label="System" items={systemItems} pathname={pathname} expanded={expanded} />
       </nav>
 
-      <div className="border-t border-border px-3 py-4">
-        <div className="flex items-center justify-between px-3">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {user?.username ?? "Admin"}
-            </p>
-            <p className="text-xs text-muted-foreground">Administrator</p>
-          </div>
+      {/* Bottom: User */}
+      <div className="border-t border-border px-2 py-3">
+        <div ref={menuRef} className="relative">
           <button
-            onClick={logout}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-2 transition-colors hover:bg-secondary"
           >
-            <LogOut className="h-4 w-4" />
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
+              {(user?.username ?? "A")[0]?.toUpperCase()}
+            </div>
+            <span className={cn("truncate text-sm font-medium text-foreground", fadeText(expanded))}>
+              {user?.username ?? "Admin"}
+            </span>
           </button>
+
+          {/* Popup menu */}
+          {userMenuOpen && (
+            <div className={cn(
+              "absolute z-50 rounded-lg border border-border bg-card py-1 shadow-lg",
+              expanded
+                ? "bottom-full left-0 mb-1 w-full"
+                : "bottom-0 left-full ml-2 w-40",
+            )}>
+              <div className="px-3 py-2 border-b border-border">
+                <p className="text-sm font-medium text-foreground">{user?.username ?? "Admin"}</p>
+                <p className="text-xs text-muted-foreground">Administrator</p>
+              </div>
+              <button
+                onClick={() => { setUserMenuOpen(false); logout(); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Log out
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </aside>
