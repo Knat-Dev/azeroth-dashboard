@@ -1,6 +1,8 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import * as http from 'http';
 
+const DOCKER_REQUEST_TIMEOUT_MS = 15_000;
+
 interface DockerContainerJson {
   Id: string;
   Names: string[];
@@ -45,7 +47,7 @@ export class DockerService {
   dockerRequest(path: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const req = http.request(
-        { socketPath: this.socketPath, path, method: 'GET' },
+        { socketPath: this.socketPath, path, method: 'GET', timeout: DOCKER_REQUEST_TIMEOUT_MS },
         (res) => {
           const chunks: Buffer[] = [];
           res.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -63,6 +65,7 @@ export class DockerService {
           });
         },
       );
+      req.on('timeout', () => { req.destroy(); reject(new Error('Docker API request timed out')); });
       req.on('error', (err) => reject(err));
       req.end();
     });
@@ -72,7 +75,7 @@ export class DockerService {
   private dockerPost(path: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const req = http.request(
-        { socketPath: this.socketPath, path, method: 'POST' },
+        { socketPath: this.socketPath, path, method: 'POST', timeout: DOCKER_REQUEST_TIMEOUT_MS },
         (res) => {
           const chunks: Buffer[] = [];
           res.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -90,6 +93,7 @@ export class DockerService {
           });
         },
       );
+      req.on('timeout', () => { req.destroy(); reject(new Error('Docker API request timed out')); });
       req.on('error', (err) => reject(err));
       req.end();
     });

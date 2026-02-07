@@ -95,6 +95,8 @@ export default function ConsolePage() {
   const [executing, setExecuting] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttempt = useRef(0);
   const termRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const maxLines = 2000;
@@ -147,58 +149,79 @@ export default function ConsolePage() {
   // Connect to SSE stream when active container changes
   useEffect(() => {
     if (!activeContainer) return;
+    let disposed = false;
 
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+    function cleanup() {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (reconnectTimer.current) {
+        clearTimeout(reconnectTimer.current);
+        reconnectTimer.current = null;
+      }
     }
 
-    setError("");
-    let cleared = false;
-
-    const token = getStoredToken();
-    if (!token) {
-      setError("Not authenticated");
-      return;
-    }
-
-    const url = `${API_URL}/admin/logs/containers/${activeContainer}/stream?token=${encodeURIComponent(token)}&tail=5000`;
-    const es = new EventSource(url);
-    eventSourceRef.current = es;
-
-    es.onopen = () => {
-      setConnected(true);
+    function connect() {
+      if (disposed) return;
+      cleanup();
       setError("");
-    };
 
-    es.onmessage = (event) => {
-      if (!cleared) {
-        setLines([]);
-        cleared = true;
+      const token = getStoredToken();
+      if (!token) {
+        setError("Not authenticated");
+        return;
       }
-      try {
-        const line = JSON.parse(event.data);
-        if (typeof line === "string") {
-          pushLines(line);
-        } else if (line?.error) {
-          setError(line.error);
+
+      let cleared = false;
+      const url = `${API_URL}/admin/logs/containers/${activeContainer}/stream?token=${encodeURIComponent(token)}&tail=5000`;
+      const es = new EventSource(url);
+      eventSourceRef.current = es;
+
+      es.onopen = () => {
+        setConnected(true);
+        setError("");
+        reconnectAttempt.current = 0;
+      };
+
+      es.onmessage = (event) => {
+        if (!cleared) {
+          setLines([]);
+          cleared = true;
         }
-      } catch {
-        pushLines(event.data);
-      }
-    };
+        try {
+          const line = JSON.parse(event.data);
+          if (typeof line === "string") {
+            pushLines(line);
+          } else if (line?.error) {
+            setError(line.error);
+          }
+        } catch {
+          pushLines(event.data);
+        }
+      };
 
-    es.addEventListener("end", () => {
-      setConnected(false);
-    });
+      es.addEventListener("end", () => {
+        setConnected(false);
+      });
 
-    es.onerror = () => {
-      setConnected(false);
-    };
+      es.onerror = () => {
+        setConnected(false);
+        es.close();
+        eventSourceRef.current = null;
+        if (disposed) return;
+        // Reconnect with exponential backoff (1s, 2s, 4s, 8s, max 30s)
+        const delay = Math.min(1000 * 2 ** reconnectAttempt.current, 30_000);
+        reconnectAttempt.current++;
+        reconnectTimer.current = setTimeout(connect, delay);
+      };
+    }
+
+    connect();
 
     return () => {
-      es.close();
-      eventSourceRef.current = null;
+      disposed = true;
+      cleanup();
     };
   }, [activeContainer, pushLines]);
 

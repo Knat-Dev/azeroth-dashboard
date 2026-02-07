@@ -39,8 +39,8 @@ class ApiClient {
     return res.json();
   }
 
-  get<T>(path: string) {
-    return this.request<T>(path);
+  get<T>(path: string, options?: { signal?: AbortSignal }) {
+    return this.request<T>(path, { signal: options?.signal });
   }
 
   post<T>(path: string, body?: unknown) {

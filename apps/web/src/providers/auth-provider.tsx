@@ -57,6 +57,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => api.setOnUnauthorized(null);
   }, [logout]);
 
+  // Silent token refresh every 20 minutes
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.post<{ accessToken: string; user: User }>("/auth/refresh");
+        api.setToken(res.accessToken);
+        storeAuth(res.accessToken, res.user);
+        setUser(res.user);
+      } catch {
+        // Refresh failed — token may be expired, will get caught by 401 handler
+      }
+    }, 20 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   return (
     <AuthContext value={{ user, loading, login, logout }}>
       {children}

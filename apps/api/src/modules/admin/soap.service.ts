@@ -1,8 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
 const SOAP_TIMEOUT_MS = 10_000;
+
+const BLOCKED_COMMANDS = [
+  '.server shutdown',
+  '.server exit',
+  '.server restart',
+  '.account delete',
+  '.account set password',
+  '.rbac',
+];
+
 
 @Injectable()
 export class SoapService {
@@ -22,6 +32,14 @@ export class SoapService {
   async executeCommand(
     command: string,
   ): Promise<{ success: boolean; message: string }> {
+    const trimmed = command.trim().toLowerCase();
+    const blocked = BLOCKED_COMMANDS.find((b) => trimmed.startsWith(b));
+    if (blocked) {
+      throw new BadRequestException(
+        `Command "${blocked}" is blocked for safety. Use the server restart button or perform this action directly on the server.`,
+      );
+    }
+
     const url = `http://${this.host}:${this.port}/`;
 
     const envelope = `<?xml version="1.0" encoding="utf-8"?>
@@ -67,13 +85,25 @@ export class SoapService {
   }
 
   private parseResponse(xml: string): string {
-    const match = xml.match(/<result[^>]*>([\s\S]*?)<\/result>/);
-    const raw = match?.[1]?.trim() ?? xml;
-    return raw.replace(/&#xD;/g, '').replace(/&#xA;/g, '\n');
+    // AzerothCore returns simple XML; match the result tag content
+    const match = xml.match(/<result[^>]*>([\s\S]*?)<\/result>/i);
+    if (!match) {
+      this.logger.warn(`Unexpected SOAP response format: ${xml.slice(0, 200)}`);
+      return xml;
+    }
+    return (match[1] ?? '')
+      .trim()
+      .replace(/&#xD;/g, '')
+      .replace(/&#xA;/g, '\n')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'");
   }
 
   private parseFault(xml: string): string {
-    const match = xml.match(/<faultstring[^>]*>([\s\S]*?)<\/faultstring>/);
+    const match = xml.match(/<faultstring[^>]*>([\s\S]*?)<\/faultstring>/i);
     return match?.[1]?.trim() ?? 'Unknown SOAP error';
   }
 }

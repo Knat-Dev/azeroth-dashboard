@@ -1,4 +1,5 @@
 import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AccountsService } from './accounts.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -15,6 +16,7 @@ export class AccountsController {
   }
 
   @Patch('me/password')
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   changePassword(
     @CurrentUser() user: { id: number },
     @Body() dto: ChangePasswordDto,

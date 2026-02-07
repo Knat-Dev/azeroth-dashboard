@@ -1,12 +1,9 @@
 import { Injectable, Inject, Logger, OnModuleInit, forwardRef, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { promises as fs } from 'fs';
+import { spawn, type ChildProcess } from 'child_process';
+import { promises as fs, createWriteStream } from 'fs';
 import { join } from 'path';
 import { WebhookService } from '../webhook/webhook.service.js';
-
-const execAsync = promisify(exec);
 
 const ALLOWED_DATABASES = ['acore_auth', 'acore_characters', 'acore_playerbots', 'acore_world'];
 const MYSQLDUMP_TIMEOUT_MS = 300_000; // 5 minutes
@@ -32,6 +29,7 @@ export class BackupService implements OnModuleInit {
   private readonly backupDir: string;
   private readonly dbHost: string;
   private readonly dbPort: string;
+  private readonly dbUser: string;
   private readonly dbPassword: string;
   private readonly retentionDays: number;
   private scheduleConfig: BackupScheduleConfig;
@@ -46,6 +44,7 @@ export class BackupService implements OnModuleInit {
       (process.env.NODE_ENV === 'production' ? '/backups' : join(process.cwd(), 'backups'));
     this.dbHost = configService.get<string>('DB_HOST', 'localhost');
     this.dbPort = configService.get<string>('DB_PORT', '3306');
+    this.dbUser = configService.get<string>('DB_USER', 'root');
     this.dbPassword = configService.get<string>('DB_ROOT_PASSWORD', 'password');
     this.retentionDays = configService.get<number>(
       'backup.retentionDays',
@@ -78,10 +77,7 @@ export class BackupService implements OnModuleInit {
       const filePath = join(this.backupDir, filename);
 
       try {
-        await execAsync(
-          `set -o pipefail; mysqldump --protocol=tcp -h ${this.dbHost} -P ${this.dbPort} -u root -p'${this.dbPassword}' ${db} | gzip > '${filePath}'`,
-          { timeout: MYSQLDUMP_TIMEOUT_MS, shell: '/bin/bash' },
-        );
+        await this.execMysqldump(db, filePath);
 
         const stat = await fs.stat(filePath);
         if (stat.size <= MIN_VALID_BACKUP_SIZE) {
@@ -124,6 +120,49 @@ export class BackupService implements OnModuleInit {
     return results;
   }
 
+  private execMysqldump(db: string, filePath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        dump.kill();
+        gzip.kill();
+        reject(new Error(`Backup timed out after ${MYSQLDUMP_TIMEOUT_MS}ms`));
+      }, MYSQLDUMP_TIMEOUT_MS);
+
+      const dump = spawn('mysqldump', [
+        '--protocol=tcp',
+        '-h', this.dbHost,
+        '-P', this.dbPort,
+        '-u', this.dbUser,
+        `-p${this.dbPassword}`,
+        db,
+      ]);
+
+      const gzip = spawn('gzip');
+      const outStream = createWriteStream(filePath);
+
+      dump.stdout.pipe(gzip.stdin);
+      gzip.stdout.pipe(outStream);
+
+      let stderrChunks: Buffer[] = [];
+      dump.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+
+      dump.on('error', (err) => { clearTimeout(timer); reject(err); });
+      gzip.on('error', (err) => { clearTimeout(timer); reject(err); });
+
+      outStream.on('finish', () => {
+        clearTimeout(timer);
+        if (dump.exitCode !== 0) {
+          const stderr = Buffer.concat(stderrChunks).toString().trim();
+          reject(new Error(`mysqldump exited with code ${dump.exitCode}: ${stderr}`));
+        } else {
+          resolve();
+        }
+      });
+
+      outStream.on('error', (err) => { clearTimeout(timer); reject(err); });
+    });
+  }
+
   async listBackups() {
     try {
       const files = await fs.readdir(this.backupDir);
@@ -163,6 +202,9 @@ export class BackupService implements OnModuleInit {
   }
 
   async setSchedule(config: BackupScheduleConfig) {
+    if (config.retentionDays < 1) {
+      throw new BadRequestException('Retention days must be at least 1');
+    }
     this.scheduleConfig = config;
     await this.saveScheduleConfig();
     this.setupScheduleTimer();

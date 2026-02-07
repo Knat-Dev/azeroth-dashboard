@@ -77,7 +77,37 @@ export default function SettingsPage() {
     updateSetting("webhookEvents", next.join(","));
   }
 
+  function validateSettings(): string | null {
+    const cooldown = parseInt(settings.autoRestartCooldown, 10);
+    if (isNaN(cooldown) || cooldown < 0) return "Cooldown must be a non-negative number";
+
+    const maxRetries = parseInt(settings.autoRestartMaxRetries, 10);
+    if (isNaN(maxRetries) || maxRetries < 0 || maxRetries > 20) return "Max retries must be between 0 and 20";
+
+    const retryInterval = parseInt(settings.autoRestartRetryInterval, 10);
+    if (isNaN(retryInterval) || retryInterval < 0) return "Retry interval must be a non-negative number";
+
+    const threshold = parseInt(settings.crashLoopThreshold, 10);
+    if (isNaN(threshold) || threshold < 1 || threshold > 50) return "Crash threshold must be between 1 and 50";
+
+    const window = parseInt(settings.crashLoopWindow, 10);
+    if (isNaN(window) || window < 0) return "Detection window must be a non-negative number";
+
+    const webhookUrl = settings.discordWebhookUrl?.trim();
+    if (webhookUrl && !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
+      return "Webhook URL must start with https://discord.com/api/webhooks/";
+    }
+
+    return null;
+  }
+
   async function handleSave() {
+    const validationError = validateSettings();
+    if (validationError) {
+      toast("error", validationError);
+      return;
+    }
+
     setSaving(true);
     try {
       await api.put("/admin/settings", settings);

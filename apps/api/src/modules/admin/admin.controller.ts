@@ -22,6 +22,7 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { GmLevel } from '../../common/enums/gm-level.enum.js';
+import { CreateAccountDto, BanAccountDto, ExecuteCommandDto } from './admin.dto.js';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -56,7 +57,7 @@ export class AdminController {
   @Post('accounts')
   async createAccount(
     @CurrentUser() user: { username: string },
-    @Body() body: { username: string; password: string; email?: string; expansion?: number; gmLevel?: number },
+    @Body() body: CreateAccountDto,
   ) {
     const result = await this.adminService.createAccount(
       body.username,
@@ -81,7 +82,7 @@ export class AdminController {
   async banAccount(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { username: string },
-    @Body() body: { reason: string; duration: number },
+    @Body() body: BanAccountDto,
   ) {
     const result = await this.adminService.banAccount(
       id,
@@ -120,7 +121,7 @@ export class AdminController {
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   async executeCommand(
     @CurrentUser() user: { username: string },
-    @Body() body: { command: string },
+    @Body() body: ExecuteCommandDto,
   ) {
     const result = await this.soapService.executeCommand(body.command);
     this.eventService.logEvent('ac-worldserver', 'soap_command', body.command, undefined, user.username);

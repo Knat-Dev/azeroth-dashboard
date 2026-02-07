@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/providers/toast-provider";
 import { UserCog, Plus, Search } from "lucide-react";
 
@@ -33,8 +34,8 @@ export default function AccountsPage() {
 
   // Search state
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedSearch = useDebounce(search);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Ban modal state
   const [banningId, setBanningId] = useState<number | null>(null);
@@ -54,6 +55,11 @@ export default function AccountsPage() {
 
   const fetchAccounts = useCallback(
     (p: number, searchTerm?: string) => {
+      // Cancel any in-flight request to prevent out-of-order responses
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
       setLoading(true);
       setError("");
       const term = searchTerm !== undefined ? searchTerm : debouncedSearch;
@@ -62,14 +68,17 @@ export default function AccountsPage() {
         url += `&search=${encodeURIComponent(term)}`;
       }
       api
-        .get<AccountsApiResponse>(url)
+        .get<AccountsApiResponse>(url, { signal: controller.signal })
         .then((res) => {
           setAccounts(res.data);
           setTotal(res.total);
           setPage(res.page);
           setTotalPages(Math.ceil(res.total / LIMIT));
         })
-        .catch((e) => setError(e.message))
+        .catch((e) => {
+          if (e instanceof DOMException && e.name === "AbortError") return;
+          setError(e.message);
+        })
         .finally(() => setLoading(false));
     },
     [debouncedSearch],
@@ -78,26 +87,6 @@ export default function AccountsPage() {
   useEffect(() => {
     fetchAccounts(1);
   }, [fetchAccounts]);
-
-  // Debounce search input
-  function handleSearchChange(value: string) {
-    setSearch(value);
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    debounceTimer.current = setTimeout(() => {
-      setDebouncedSearch(value);
-    }, 300);
-  }
-
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-  }, []);
 
   // When debounced search changes, reset to page 1 and fetch
   useEffect(() => {
@@ -196,7 +185,7 @@ export default function AccountsPage() {
             <input
               type="text"
               value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full md:w-64 rounded-lg border border-border bg-secondary py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Search accounts..."
             />

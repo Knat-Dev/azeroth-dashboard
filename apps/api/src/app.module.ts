@@ -50,7 +50,7 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
         type: 'mysql',
         host: config.get('DB_HOST', 'localhost'),
         port: config.get('DB_PORT', 3306),
-        username: 'root',
+        username: config.get('DB_USER', 'root'),
         password: config.get('DB_ROOT_PASSWORD', 'password'),
         database: 'acore_auth',
         entities: [
@@ -73,7 +73,7 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
         type: 'mysql',
         host: config.get('DB_HOST', 'localhost'),
         port: config.get('DB_PORT', 3306),
-        username: 'root',
+        username: config.get('DB_USER', 'root'),
         password: config.get('DB_ROOT_PASSWORD', 'password'),
         database: 'acore_characters',
         entities: [
@@ -96,7 +96,7 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
         type: 'mysql',
         host: config.get('DB_HOST', 'localhost'),
         port: config.get('DB_PORT', 3306),
-        username: 'root',
+        username: config.get('DB_USER', 'root'),
         password: config.get('DB_ROOT_PASSWORD', 'password'),
         database: 'acore_world',
         entities: [ItemTemplate],

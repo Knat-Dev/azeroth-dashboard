@@ -30,7 +30,7 @@ export interface HealthState {
 }
 
 const POLL_INTERVAL_MS = 5000;
-const SOAP_TIMEOUT_MS = 3000;
+const SOAP_TIMEOUT_MS = parseInt(process.env.SOAP_TIMEOUT_MS ?? '5000', 10);
 const PLAYER_RECORD_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 

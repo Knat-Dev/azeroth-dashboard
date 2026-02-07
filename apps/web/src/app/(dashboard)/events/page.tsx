@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Activity, Search, Clock } from "lucide-react";
 
 interface ServerEvent {
@@ -81,20 +82,7 @@ export default function EventsPage() {
   const [error, setError] = useState("");
   const [container, setContainer] = useState("");
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleSearchChange(value: string) {
-    setSearch(value);
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => setDebouncedSearch(value), 300);
-  }
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    };
-  }, []);
+  const debouncedSearch = useDebounce(search);
 
   const fetchEvents = useCallback(
     (p: number) => {
@@ -119,6 +107,12 @@ export default function EventsPage() {
   useEffect(() => {
     fetchEvents(1);
   }, [fetchEvents]);
+
+  // Auto-refresh events every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => fetchEvents(page), 30_000);
+    return () => clearInterval(interval);
+  }, [fetchEvents, page]);
 
   // Filter by search client-side (event_type or details)
   const filtered = debouncedSearch
@@ -147,7 +141,7 @@ export default function EventsPage() {
               className="w-full md:w-56 rounded-lg border border-border bg-secondary pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Filter events..."
               value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <select

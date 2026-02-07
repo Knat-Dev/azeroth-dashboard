@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import { GlobalExceptionFilter } from './common/filters/http-exception.filter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,6 +18,13 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Simple health check for orchestration tools (outside of global prefix)
+  const express = app.getHttpAdapter().getInstance();
+  express.get('/health', (_req: unknown, res: { json: (body: unknown) => void }) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
   await app.listen(process.env.PORT ?? 7791, '0.0.0.0');
 }

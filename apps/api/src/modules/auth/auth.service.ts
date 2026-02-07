@@ -11,6 +11,7 @@ import { AccountAccess } from '../../entities/auth/account-access.entity.js';
 import { checkPassword } from './srp6.util.js';
 
 const MIN_GM_LEVEL = 3;
+const MAX_FAILED_LOGINS = 10;
 
 @Injectable()
 export class AuthService {
@@ -32,8 +33,22 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (account.failed_logins >= MAX_FAILED_LOGINS) {
+      throw new UnauthorizedException(
+        'Account locked due to too many failed login attempts. Contact an administrator.',
+      );
+    }
+
     if (!checkPassword(username, password, account.salt, account.verifier)) {
+      await this.accountRepo.update(account.id, {
+        failed_logins: account.failed_logins + 1,
+      });
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Reset failed logins on successful authentication
+    if (account.failed_logins > 0) {
+      await this.accountRepo.update(account.id, { failed_logins: 0 });
     }
 
     const gmLevel = await this.getGmLevel(account.id);
