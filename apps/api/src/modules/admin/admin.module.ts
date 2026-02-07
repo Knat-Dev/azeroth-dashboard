@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module.js';
 import { DockerModule } from '../docker/docker.module.js';
+import { MonitorModule } from '../monitor/monitor.module.js';
+import { WebhookModule } from '../webhook/webhook.module.js';
 import { AdminController } from './admin.controller.js';
 import { AdminService } from './admin.service.js';
 import { SoapService } from './soap.service.js';
@@ -26,6 +28,8 @@ import { Character } from '../../entities/characters/character.entity.js';
     TypeOrmModule.forFeature([Character], 'characters'),
     AuthModule,
     DockerModule,
+    forwardRef(() => MonitorModule),
+    forwardRef(() => WebhookModule),
   ],
   controllers: [
     AdminController,

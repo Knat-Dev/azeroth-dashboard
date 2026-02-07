@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Body,
@@ -13,6 +14,8 @@ import {
 import { AdminService } from './admin.service.js';
 import { SoapService } from './soap.service.js';
 import { DockerService } from '../docker/docker.service.js';
+import { MonitorService } from '../monitor/monitor.service.js';
+import { EventService } from '../monitor/event.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -27,6 +30,8 @@ export class AdminController {
     private adminService: AdminService,
     private soapService: SoapService,
     private dockerService: DockerService,
+    private monitorService: MonitorService,
+    private eventService: EventService,
   ) {}
 
   @Get('stats')
@@ -83,7 +88,23 @@ export class AdminController {
   }
 
   @Post('restart/:container')
-  restartContainer(@Param('container') container: string) {
+  async restartContainer(@Param('container') container: string) {
+    this.monitorService.clearCrashLoop(container);
     return this.dockerService.restartContainer(container);
+  }
+
+  @Get('settings')
+  getSettings() {
+    return this.eventService.getAllSettings();
+  }
+
+  @Put('settings')
+  updateSettings(@Body() body: Record<string, string>) {
+    for (const [key, value] of Object.entries(body)) {
+      this.eventService.setSetting(key, value);
+    }
+    // Reload runtime config in monitor + webhook services
+    this.monitorService.reloadAllSettings();
+    return { success: true };
   }
 }

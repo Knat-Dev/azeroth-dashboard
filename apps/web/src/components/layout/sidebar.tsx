@@ -1,19 +1,18 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 import {
-  Home,
-  Terminal,
-  Database,
-  Users,
-  UserCog,
   Ban,
-  Settings,
+  Database,
+  Home,
   LogOut,
+  Settings,
+  Terminal,
+  UserCog
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const opsItems = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -73,7 +72,7 @@ export function Sidebar() {
     <aside className="flex h-screen w-64 flex-col bg-card border-r border-border">
       <div className="flex items-center gap-2 border-b border-border px-6 py-4">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-sm">A</span>
+          <span className="text-primary-foreground font-bold text-sm">AC</span>
         </div>
         <div>
           <h1 className="text-sm font-semibold text-foreground">Azeroth Dashboard</h1>

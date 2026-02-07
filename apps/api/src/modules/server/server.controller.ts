@@ -1,6 +1,7 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ServerService } from './server.service.js';
 import { MonitorService } from '../monitor/monitor.service.js';
+import { EventService } from '../monitor/event.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
 @Controller('server')
@@ -8,6 +9,7 @@ export class ServerController {
   constructor(
     private serverService: ServerService,
     private monitorService: MonitorService,
+    private eventService: EventService,
   ) {}
 
   @Get('status')
@@ -30,5 +32,27 @@ export class ServerController {
   @Get('realms')
   getRealms() {
     return this.serverService.getRealms();
+  }
+
+  @Get('events')
+  @UseGuards(JwtAuthGuard)
+  getEvents(
+    @Query('limit') limit?: string,
+    @Query('container') container?: string,
+  ) {
+    return this.eventService.getEvents(
+      parseInt(limit ?? '50', 10),
+      container,
+    );
+  }
+
+  @Get('player-history')
+  @UseGuards(JwtAuthGuard)
+  getPlayerHistory(@Query('range') range?: string) {
+    const validRanges = ['24h', '7d', '30d'] as const;
+    const r = validRanges.includes(range as typeof validRanges[number])
+      ? (range as '24h' | '7d' | '30d')
+      : '24h';
+    return this.eventService.getPlayerHistory(r);
   }
 }

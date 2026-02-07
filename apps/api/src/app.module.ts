@@ -10,6 +10,7 @@ import { ServerModule } from './modules/server/server.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { DockerModule } from './modules/docker/docker.module.js';
 import { MonitorModule } from './modules/monitor/monitor.module.js';
+import { WebhookModule } from './modules/webhook/webhook.module.js';
 
 // Auth DB entities
 import { Account } from './entities/auth/account.entity.js';
@@ -106,6 +107,7 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
     AdminModule,
     DockerModule,
     MonitorModule,
+    WebhookModule,
   ],
 })
 export class AppModule {}

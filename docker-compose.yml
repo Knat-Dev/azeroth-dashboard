@@ -21,9 +21,18 @@ services:
       - JWT_SECRET=${JWT_SECRET:-change-me}
       - CORS_ORIGIN=http://localhost:${DASHBOARD_PORT:-7780}
       - PORT=3001
+      - AUTO_RESTART_ENABLED=${AUTO_RESTART_ENABLED:-true}
+      - AUTO_RESTART_COOLDOWN=${AUTO_RESTART_COOLDOWN:-10000}
+      - AUTO_RESTART_MAX_RETRIES=${AUTO_RESTART_MAX_RETRIES:-3}
+      - AUTO_RESTART_RETRY_INTERVAL=${AUTO_RESTART_RETRY_INTERVAL:-15000}
+      - CRASH_LOOP_THRESHOLD=${CRASH_LOOP_THRESHOLD:-3}
+      - CRASH_LOOP_WINDOW=${CRASH_LOOP_WINDOW:-300000}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - WEBHOOK_EVENTS=${WEBHOOK_EVENTS:-crash,restart_failed,crash_loop,backup_success,backup_failed}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - dashboard-backups:/backups
+      - dashboard-data:/data
     restart: unless-stopped
 
   dashboard-web:
@@ -45,3 +54,4 @@ networks:
 
 volumes:
   dashboard-backups:
+  dashboard-data:

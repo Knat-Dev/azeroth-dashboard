@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  Activity,
+  Clock,
 } from "lucide-react";
 
 interface HealthState {
@@ -19,6 +21,53 @@ interface HealthState {
   soap: { connected: boolean };
   players: { online: number };
   lastUpdated: string;
+}
+
+interface ServerEvent {
+  id: number;
+  timestamp: string;
+  container: string;
+  event_type: string;
+  details: string | null;
+  duration_ms: number | null;
+}
+
+function formatRelativeTime(timestamp: string): string {
+  const now = Date.now();
+  const then = new Date(timestamp).getTime();
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+function shortenContainer(container: string): string {
+  if (container.includes("worldserver")) return "World";
+  if (container.includes("authserver")) return "Auth";
+  return container;
+}
+
+function eventTypeColor(eventType: string): string {
+  const red = ["crash", "restart_failed", "crash_loop"];
+  const green = ["restart_attempt", "restart_success", "recovery"];
+  const yellow = ["soap_degraded", "soap_recovered"];
+  if (red.includes(eventType)) return "text-red-400";
+  if (green.includes(eventType)) return "text-green-400";
+  if (yellow.includes(eventType)) return "text-yellow-400";
+  return "text-muted-foreground";
+}
+
+function formatDuration(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return sec > 0 ? `${min}m ${sec}s` : `${min}m`;
 }
 
 function StatusBadge({ state }: { state: string }) {
@@ -124,6 +173,9 @@ export default function DashboardPage() {
     message: string;
   } | null>(null);
 
+  // Events state
+  const [events, setEvents] = useState<ServerEvent[]>([]);
+
   // Broadcast state
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastType, setBroadcastType] = useState<"announce" | "notify" | "both">("announce");
@@ -148,6 +200,13 @@ export default function DashboardPage() {
     const interval = setInterval(fetchHealth, 5000);
     return () => clearInterval(interval);
   }, [fetchHealth]);
+
+  useEffect(() => {
+    api
+      .get<ServerEvent[]>("/server/events?limit=10")
+      .then(setEvents)
+      .catch(() => {});
+  }, []);
 
   async function handleRestart() {
     if (!restartTarget) return;
@@ -435,6 +494,50 @@ export default function DashboardPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Recent Events */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Activity className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Recent Events
+          </h2>
+        </div>
+
+        {events.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No events recorded yet</p>
+        ) : (
+          <div className="space-y-2">
+            {events.map((event) => (
+              <div
+                key={event.id}
+                className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm"
+              >
+                <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 w-16">
+                  <Clock className="h-3 w-3" />
+                  {formatRelativeTime(event.timestamp)}
+                </span>
+                <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-xs font-medium text-foreground">
+                  {shortenContainer(event.container)}
+                </span>
+                <span className={`shrink-0 text-xs font-medium ${eventTypeColor(event.event_type)}`}>
+                  {event.event_type}
+                </span>
+                {event.details && (
+                  <span className="truncate text-xs text-muted-foreground" title={event.details}>
+                    {event.details}
+                  </span>
+                )}
+                {event.duration_ms != null && (
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {formatDuration(event.duration_ms)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Confirm Dialog */}

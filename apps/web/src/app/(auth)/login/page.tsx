@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -32,7 +32,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <span className="text-xl font-bold text-primary-foreground">A</span>
+            <span className="text-xl font-bold text-primary-foreground">AC</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground">Azeroth Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>

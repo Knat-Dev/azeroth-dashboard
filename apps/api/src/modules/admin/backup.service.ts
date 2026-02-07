@@ -1,9 +1,10 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { WebhookService } from '../webhook/webhook.service.js';
 
 const execAsync = promisify(exec);
 
@@ -25,7 +26,11 @@ export class BackupService implements OnModuleInit {
   private scheduleConfig: BackupScheduleConfig;
   private scheduleTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @Inject(forwardRef(() => WebhookService))
+    private webhookService: WebhookService,
+  ) {
     this.backupDir = configService.get<string>('backup.dir') ??
       (process.env.NODE_ENV === 'production' ? '/backups' : join(process.cwd(), 'backups'));
     this.dbHost = configService.get<string>('DB_HOST', 'localhost');
@@ -76,6 +81,25 @@ export class BackupService implements OnModuleInit {
     }
 
     await this.cleanOldBackups();
+
+    const allSucceeded = results.every((r) => r.success);
+    if (allSucceeded) {
+      this.webhookService.sendNotification(
+        'backup_success',
+        'info',
+        'Backup completed',
+        `Databases: ${databases.join(', ')}`,
+      );
+    } else {
+      const failed = results.filter((r) => !r.success).map((r) => r.database);
+      this.webhookService.sendNotification(
+        'backup_failed',
+        'high',
+        'Backup failed',
+        `Failed databases: ${failed.join(', ')}`,
+      );
+    }
+
     return results;
   }
 

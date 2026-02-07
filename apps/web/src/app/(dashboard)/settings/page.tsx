@@ -1,27 +1,417 @@
 "use client";
 
-import { Settings } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { api } from "@/lib/api";
+import { Settings, Save, RefreshCw, Bell, CheckCircle2, XCircle } from "lucide-react";
+
+const WEBHOOK_EVENT_OPTIONS = [
+  { value: "crash", label: "Server Crash" },
+  { value: "restart_failed", label: "Restart Failed" },
+  { value: "crash_loop", label: "Crash Loop Detected" },
+  { value: "backup_success", label: "Backup Success" },
+  { value: "backup_failed", label: "Backup Failed" },
+];
+
+const DEFAULT_SETTINGS: Record<string, string> = {
+  autoRestartEnabled: "false",
+  autoRestartCooldown: "10000",
+  autoRestartMaxRetries: "3",
+  autoRestartRetryInterval: "15000",
+  crashLoopThreshold: "3",
+  crashLoopWindow: "300000",
+  discordWebhookUrl: "",
+  webhookEvents: "crash,restart_failed,crash_loop,backup_success,backup_failed",
+};
+
+function msToSeconds(ms: string | undefined): string {
+  if (!ms) return "";
+  const num = parseInt(ms, 10);
+  if (isNaN(num)) return "";
+  return String(num / 1000);
+}
+
+function secondsToMs(seconds: string): string {
+  const num = parseFloat(seconds);
+  if (isNaN(num)) return "0";
+  return String(Math.round(num * 1000));
+}
 
 export default function SettingsPage() {
+  const [settings, setSettings] = useState<Record<string, string>>(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.get<Record<string, string>>("/admin/settings");
+      setSettings({ ...DEFAULT_SETTINGS, ...data });
+    } catch (e) {
+      setToast({
+        type: "error",
+        message: e instanceof Error ? e.message : "Failed to load settings",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchSettings();
+  }, [fetchSettings]);
+
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [toast]);
+
+  function updateSetting(key: string, value: string) {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function getWebhookEvents(): string[] {
+    const raw = settings.webhookEvents || "";
+    if (!raw.trim()) return [];
+    return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+
+  function toggleWebhookEvent(event: string) {
+    const current = getWebhookEvents();
+    const next = current.includes(event)
+      ? current.filter((e) => e !== event)
+      : [...current, event];
+    updateSetting("webhookEvents", next.join(","));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await api.put("/admin/settings", settings);
+      setToast({ type: "success", message: "Settings saved successfully" });
+    } catch (e) {
+      setToast({
+        type: "error",
+        message: e instanceof Error ? e.message : "Failed to save settings",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputClasses =
+    "w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Configure auto-restart, crash loop protection, and webhooks
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Configure auto-restart, webhooks, and backup schedules
+          Configure auto-restart, crash loop protection, and webhooks
         </p>
       </div>
 
-      <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card p-16">
-        <div className="rounded-xl bg-secondary p-4">
-          <Settings className="h-8 w-8 text-muted-foreground" />
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm ${
+            toast.type === "success"
+              ? "bg-green-500/10 text-green-400"
+              : "bg-destructive/10 text-destructive"
+          }`}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          ) : (
+            <XCircle className="h-4 w-4 shrink-0" />
+          )}
+          {toast.message}
         </div>
-        <p className="mt-4 text-sm font-medium text-foreground">
-          Coming Soon
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Settings will be available in Phase 2
-        </p>
+      )}
+
+      {/* Auto-Restart Section */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="rounded-lg bg-secondary p-2">
+            <RefreshCw className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Auto-Restart
+            </h2>
+            <p className="text-xs text-muted-foreground/70">
+              Automatically restart crashed servers
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          {/* Enable Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-foreground">
+                Enable Auto-Restart
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Automatically restart servers when they crash
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.autoRestartEnabled === "true"}
+              onClick={() =>
+                updateSetting(
+                  "autoRestartEnabled",
+                  settings.autoRestartEnabled === "true" ? "false" : "true",
+                )
+              }
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-card ${
+                settings.autoRestartEnabled === "true"
+                  ? "bg-primary"
+                  : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-foreground shadow-lg transition-transform duration-200 ${
+                  settings.autoRestartEnabled === "true"
+                    ? "translate-x-5"
+                    : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Cooldown */}
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Cooldown (seconds)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={msToSeconds(settings.autoRestartCooldown)}
+                onChange={(e) =>
+                  updateSetting("autoRestartCooldown", secondsToMs(e.target.value))
+                }
+                className={inputClasses}
+                placeholder="10"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Wait before first restart attempt
+              </p>
+            </div>
+
+            {/* Max Retries */}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Max Retries
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={settings.autoRestartMaxRetries}
+                onChange={(e) =>
+                  updateSetting("autoRestartMaxRetries", e.target.value)
+                }
+                className={inputClasses}
+                placeholder="3"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Number of restart attempts
+              </p>
+            </div>
+
+            {/* Retry Interval */}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Retry Interval (seconds)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={msToSeconds(settings.autoRestartRetryInterval)}
+                onChange={(e) =>
+                  updateSetting("autoRestartRetryInterval", secondsToMs(e.target.value))
+                }
+                className={inputClasses}
+                placeholder="15"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Time between retry attempts
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Crash Loop Protection Section */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="rounded-lg bg-secondary p-2">
+            <Settings className="h-4 w-4 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Crash Loop Protection
+            </h2>
+            <p className="text-xs text-muted-foreground/70">
+              Detect and prevent repeated crash-restart cycles
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          {/* Threshold */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              Crash Threshold
+            </label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={settings.crashLoopThreshold}
+              onChange={(e) =>
+                updateSetting("crashLoopThreshold", e.target.value)
+              }
+              className={inputClasses}
+              placeholder="3"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Number of crashes to trigger crash loop detection
+            </p>
+          </div>
+
+          {/* Window */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              Detection Window (seconds)
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={msToSeconds(settings.crashLoopWindow)}
+              onChange={(e) =>
+                updateSetting("crashLoopWindow", secondsToMs(e.target.value))
+              }
+              className={inputClasses}
+              placeholder="300"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Time window for counting crashes
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Discord Webhooks Section */}
+      <div className="rounded-xl border border-border bg-card p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="rounded-lg bg-secondary p-2">
+            <Bell className="h-4 w-4 text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Discord Webhooks
+            </h2>
+            <p className="text-xs text-muted-foreground/70">
+              Send notifications to a Discord channel
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          {/* Webhook URL */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              Webhook URL
+            </label>
+            <input
+              type="text"
+              value={settings.discordWebhookUrl}
+              onChange={(e) =>
+                updateSetting("discordWebhookUrl", e.target.value)
+              }
+              className={inputClasses}
+              placeholder="https://discord.com/api/webhooks/..."
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Leave empty to disable Discord notifications
+            </p>
+          </div>
+
+          {/* Webhook Events */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-foreground">
+              Notification Events
+            </label>
+            <div className="flex flex-wrap gap-x-6 gap-y-3">
+              {WEBHOOK_EVENT_OPTIONS.map((event) => (
+                <label
+                  key={event.value}
+                  className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={getWebhookEvents().includes(event.value)}
+                    onChange={() => toggleWebhookEvent(event.value)}
+                    className="h-4 w-4 rounded border-input bg-secondary text-primary focus:ring-2 focus:ring-ring"
+                  />
+                  {event.label}
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Select which events trigger a Discord notification
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          {saving ? (
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              Save Settings
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

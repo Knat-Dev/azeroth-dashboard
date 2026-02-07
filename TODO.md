@@ -151,100 +151,100 @@
 
 ### 2.1 SQLite Setup
 
-- [ ] Add `better-sqlite3` (or `sql.js`) dependency to API
-- [ ] Create `src/config/sqlite.config.ts` — initialize SQLite DB at `/data/dashboard.db`
-- [ ] Create events table: `id, timestamp, container, event_type, details, duration_ms`
-- [ ] Create player_history table: `id, timestamp, count`
-- [ ] Create settings table: `key, value` (for runtime config)
-- [ ] Initialize DB on app bootstrap
-- [ ] Update docker-compose: add `dashboard-data:/data` volume
+- [x] Add `better-sqlite3` (or `sql.js`) dependency to API
+- [x] Create `src/config/sqlite.config.ts` — initialize SQLite DB at `/data/dashboard.db`
+- [x] Create events table: `id, timestamp, container, event_type, details, duration_ms`
+- [x] Create player_history table: `id, timestamp, count`
+- [x] Create settings table: `key, value` (for runtime config)
+- [x] Initialize DB on app bootstrap
+- [x] Update docker-compose: add `dashboard-data:/data` volume
 
 ### 2.2 Event Logging
 
-- [ ] Create `src/modules/monitor/event.service.ts`
-- [ ] Implement `logEvent(container, type, details)` — inserts into SQLite
-- [ ] Implement `getEvents(limit)` — returns recent events
-- [ ] Implement `getEventsSince(timestamp)` — for crash loop detection
-- [ ] Wire into MonitorService: log events on state changes
+- [x] Create `src/modules/monitor/event.service.ts`
+- [x] Implement `logEvent(container, type, details)` — inserts into SQLite
+- [x] Implement `getEvents(limit)` — returns recent events
+- [x] Implement `getEventsSince(timestamp)` — for crash loop detection
+- [x] Wire into MonitorService: log events on state changes
 
 ### 2.3 Crash Detection
 
-- [ ] In MonitorService: compare current state with previous state each poll cycle
-- [ ] Detect: running → exited/dead = crash event
-- [ ] Detect: exited → running = recovery event
-- [ ] Log each state change via EventService
-- [ ] Update cached health to include `lastEvent` info
+- [x] In MonitorService: compare current state with previous state each poll cycle
+- [x] Detect: running → exited/dead = crash event
+- [x] Detect: exited → running = recovery event
+- [x] Log each state change via EventService
+- [x] Update cached health to include `lastEvent` info
 
 ### 2.4 Auto-Restart
 
-- [ ] Read config from env: `AUTO_RESTART_ENABLED`, `COOLDOWN`, `MAX_RETRIES`, `RETRY_INTERVAL`
-- [ ] On crash detection: if auto-restart enabled, start restart sequence
-- [ ] Wait cooldown period before first attempt
-- [ ] Call DockerService.restartContainer()
-- [ ] If fails: wait retry interval, attempt again (up to max retries)
-- [ ] Log each attempt as event
-- [ ] On success: log recovery event with downtime duration
-- [ ] On final failure: log restart-failed event
+- [x] Read config from env: `AUTO_RESTART_ENABLED`, `COOLDOWN`, `MAX_RETRIES`, `RETRY_INTERVAL`
+- [x] On crash detection: if auto-restart enabled, start restart sequence
+- [x] Wait cooldown period before first attempt
+- [x] Call DockerService.restartContainer()
+- [x] If fails: wait retry interval, attempt again (up to max retries)
+- [x] Log each attempt as event
+- [x] On success: log recovery event with downtime duration
+- [x] On final failure: log restart-failed event
 
 ### 2.5 Crash Loop Protection
 
-- [ ] After each restart, check: how many restarts in last CRASH_LOOP_WINDOW seconds?
-- [ ] If >= CRASH_LOOP_THRESHOLD: enter crash loop state
-- [ ] Suspend auto-restart for this container
-- [ ] Log crash-loop event
-- [ ] Health state shows CRITICAL (distinct from normal stopped)
-- [ ] Admin must manually clear crash loop state (via API or restart button)
-- [ ] Manual restart clears crash loop state
+- [x] After each restart, check: how many restarts in last CRASH_LOOP_WINDOW seconds?
+- [x] If >= CRASH_LOOP_THRESHOLD: enter crash loop state
+- [x] Suspend auto-restart for this container
+- [x] Log crash-loop event
+- [x] Health state shows CRITICAL (distinct from normal stopped)
+- [x] Admin must manually clear crash loop state (via API or restart button)
+- [x] Manual restart clears crash loop state
 
 ### 2.6 Startup Dependency Awareness
 
-- [ ] Before auto-restarting worldserver: check if authserver is running
-- [ ] If authserver is down: skip worldserver restart, log "dependency not met"
-- [ ] SOAP degradation: if worldserver running but SOAP fails for 3+ consecutive checks → log degraded event
-- [ ] Do NOT auto-restart on SOAP degradation (container is running fine)
+- [x] Before auto-restarting worldserver: check if authserver is running
+- [x] If authserver is down: skip worldserver restart, log "dependency not met"
+- [x] SOAP degradation: if worldserver running but SOAP fails for 3+ consecutive checks → log degraded event
+- [x] Do NOT auto-restart on SOAP degradation (container is running fine)
 
 ### 2.7 Webhook Service
 
-- [ ] Create `src/modules/webhook/webhook.service.ts`
-- [ ] Create `src/modules/webhook/webhook.module.ts`
-- [ ] Read `DISCORD_WEBHOOK_URL` and `WEBHOOK_EVENTS` from config
-- [ ] Implement `sendNotification(event, severity, message, details)`
-- [ ] Format as Discord embed: color based on severity, timestamp, fields
-- [ ] Rate limit: max 1 webhook per event type per 60 seconds
-- [ ] Async fire-and-forget (don't block monitor loop)
-- [ ] Handle webhook URL not configured (silently skip)
-- [ ] Handle webhook delivery failure (log warning, don't crash)
-- [ ] Wire into MonitorService: fire webhook on state change events
-- [ ] Wire into BackupService: fire webhook on backup success/failure
+- [x] Create `src/modules/webhook/webhook.service.ts`
+- [x] Create `src/modules/webhook/webhook.module.ts`
+- [x] Read `DISCORD_WEBHOOK_URL` and `WEBHOOK_EVENTS` from config
+- [x] Implement `sendNotification(event, severity, message, details)`
+- [x] Format as Discord embed: color based on severity, timestamp, fields
+- [x] Rate limit: max 1 webhook per event type per 60 seconds
+- [x] Async fire-and-forget (don't block monitor loop)
+- [x] Handle webhook URL not configured (silently skip)
+- [x] Handle webhook delivery failure (log warning, don't crash)
+- [x] Wire into MonitorService: fire webhook on state change events
+- [x] Wire into BackupService: fire webhook on backup success/failure
 - [ ] Test: crash → Discord message received
 - [ ] Test: crash loop → CRITICAL Discord message received
 - [ ] Test: backup complete → Discord message received
 
 ### 2.8 Events API Endpoint
 
-- [ ] Add `GET /api/server/events` to server controller
-- [ ] Query params: `limit` (default 50), `container` (optional filter)
-- [ ] Returns events from SQLite, newest first
-- [ ] Requires JWT auth
+- [x] Add `GET /api/server/events` to server controller
+- [x] Query params: `limit` (default 50), `container` (optional filter)
+- [x] Returns events from SQLite, newest first
+- [x] Requires JWT auth
 
 ### 2.9 Settings Page (Frontend)
 
-- [ ] Create `(dashboard)/settings/page.tsx`
-- [ ] Section: Auto-Restart — toggle enabled, cooldown input, max retries, retry interval
-- [ ] Section: Crash Loop — threshold, window
-- [ ] Section: Webhooks — Discord URL input, event checkboxes
+- [x] Create `(dashboard)/settings/page.tsx`
+- [x] Section: Auto-Restart — toggle enabled, cooldown input, max retries, retry interval
+- [x] Section: Crash Loop — threshold, window
+- [x] Section: Webhooks — Discord URL input, event checkboxes
 - [ ] Section: Backups — retention days, cron schedule (already exists in backups page — move or duplicate)
-- [ ] Backend: `GET /api/admin/settings` — returns current config (from env + SQLite overrides)
-- [ ] Backend: `PUT /api/admin/settings` — updates runtime config in SQLite
-- [ ] Runtime config overrides env vars (env = defaults, SQLite = admin overrides)
-- [ ] Save button with success toast
+- [x] Backend: `GET /api/admin/settings` — returns current config (from env + SQLite overrides)
+- [x] Backend: `PUT /api/admin/settings` — updates runtime config in SQLite
+- [x] Runtime config overrides env vars (env = defaults, SQLite = admin overrides)
+- [x] Save button with success toast
 
 ### 2.10 Restart History on Dashboard
 
-- [ ] Add "Recent Events" section to dashboard page
-- [ ] Fetch `GET /api/server/events?limit=10`
-- [ ] Render as compact timeline/list: timestamp, container, event type, duration
-- [ ] Color-code by severity: info (muted), warning (yellow), high (red), critical (pulsing red)
+- [x] Add "Recent Events" section to dashboard page
+- [x] Fetch `GET /api/server/events?limit=10`
+- [x] Render as compact timeline/list: timestamp, container, event type, duration
+- [x] Color-code by severity: info (muted), warning (yellow), high (red), critical (pulsing red)
 - [ ] Link to full event history if needed
 
 ### 2.11 Final Phase 2 Checks
@@ -257,7 +257,7 @@
 - [ ] Test: webhook rate limiting works (rapid crashes don't spam)
 - [ ] Test: settings page saves and applies config
 - [ ] Test: restart history shows on dashboard
-- [ ] Build passes with no errors
+- [x] Build passes with no errors
 
 ---
 
@@ -265,9 +265,9 @@
 
 ### 3.1 Player Count Recording
 
-- [ ] In MonitorService: every 5 minutes, write player count to SQLite player_history table
-- [ ] `GET /api/server/player-history?range=24h|7d|30d` — returns time series data
-- [ ] Prune old data: delete records older than 30 days
+- [x] In MonitorService: every 5 minutes, write player count to SQLite player_history table
+- [x] `GET /api/server/player-history?range=24h|7d|30d` — returns time series data
+- [x] Prune old data: delete records older than 30 days
 
 ### 3.2 Online Players Endpoint
 
