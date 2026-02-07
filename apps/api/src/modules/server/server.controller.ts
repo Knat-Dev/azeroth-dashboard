@@ -38,8 +38,17 @@ export class ServerController {
   @UseGuards(JwtAuthGuard)
   getEvents(
     @Query('limit') limit?: string,
+    @Query('page') page?: string,
     @Query('container') container?: string,
   ) {
+    // Paginated if page param is provided
+    if (page) {
+      return this.eventService.getEventsPaginated(
+        parseInt(page, 10),
+        parseInt(limit ?? '20', 10),
+        container,
+      );
+    }
     return this.eventService.getEvents(
       parseInt(limit ?? '50', 10),
       container,

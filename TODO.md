@@ -21,8 +21,8 @@
 - [x] Delete `(dashboard)/armory/page.tsx` (Tier 3 — remove for now)
 - [x] Delete `(dashboard)/account/page.tsx` (player self-service — remove)
 - [x] Delete `(auth)/register/page.tsx` (no public registration)
-- [ ] Update `(dashboard)/page.tsx` to be the new ops dashboard (placeholder for now)
-- [ ] Verify all deleted routes return 404, no broken imports
+- [x] Update `(dashboard)/page.tsx` to be the new ops dashboard (placeholder for now)
+- [x] Verify all deleted routes return 404, no broken imports
 
 ### 1.2 Sidebar Navigation
 
@@ -32,7 +32,7 @@
   - System: Settings `/settings`
 - [x] Remove all old nav items (characters, guilds, armory, account, admin section)
 - [x] Remove `isAdmin()` check — everything is admin, no conditional sections
-- [ ] Verify active state highlighting works on all new paths
+- [x] Verify active state highlighting works on all new paths
 
 ### 1.3 Auth Cleanup
 
@@ -233,7 +233,7 @@
 - [x] Section: Auto-Restart — toggle enabled, cooldown input, max retries, retry interval
 - [x] Section: Crash Loop — threshold, window
 - [x] Section: Webhooks — Discord URL input, event checkboxes
-- [ ] Section: Backups — retention days, cron schedule (already exists in backups page — move or duplicate)
+- [x] Section: Backups — retention days, cron schedule (lives on backups page)
 - [x] Backend: `GET /api/admin/settings` — returns current config (from env + SQLite overrides)
 - [x] Backend: `PUT /api/admin/settings` — updates runtime config in SQLite
 - [x] Runtime config overrides env vars (env = defaults, SQLite = admin overrides)
@@ -245,7 +245,7 @@
 - [x] Fetch `GET /api/server/events?limit=10`
 - [x] Render as compact timeline/list: timestamp, container, event type, duration
 - [x] Color-code by severity: info (muted), warning (yellow), high (red), critical (pulsing red)
-- [ ] Link to full event history if needed
+- [x] Link to full event history — "View All" link on dashboard, `/events` page with paginated table
 
 ### 2.11 Final Phase 2 Checks
 
@@ -311,10 +311,10 @@
 
 ### 4.1 Polish Existing Pages
 
-- [ ] Accounts page: verify it works at new route `/accounts`
-- [ ] Bans page: verify it works at new route `/bans`
-- [ ] Autobroadcast: decide where it lives (settings? or separate page?)
-- [ ] Ensure consistent UI (table headers, spacing, empty states, loading states)
+- [x] Accounts page: works at `/accounts` with create, ban, search, pagination
+- [x] Bans page: works at `/bans` with unban, search, pagination
+- [x] Autobroadcast: lives on dashboard page as inline form
+- [x] Ensure consistent UI (table headers, spacing, empty states, loading states)
 
 ### 4.2 Armory (Future)
 
@@ -325,10 +325,10 @@
 ### 4.3 Final Polish
 
 - [ ] Responsive design check (sidebar collapse on mobile?)
-- [ ] Error boundaries on all pages
-- [ ] 401 handling (auto-logout) — already implemented in api.ts
-- [ ] Loading states consistent across all pages
-- [ ] Empty states consistent with icons across all pages
-- [ ] Toast notifications for all mutation actions
+- [x] Error boundaries on all pages — `(dashboard)/error.tsx`
+- [x] 401 handling (auto-logout) — already implemented in api.ts
+- [x] Loading states consistent across all pages
+- [x] Empty states consistent with icons across all pages — centered on both axes
+- [x] Toast notifications for all mutation actions — centralized `ToastProvider`
 - [ ] Docker builds work (`docker compose build`)
 - [ ] Full E2E test: fresh clone → env setup → docker compose up → login → full feature walkthrough

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
-import { Settings, Save, RefreshCw, Bell, CheckCircle2, XCircle } from "lucide-react";
+import { useToast } from "@/providers/toast-provider";
+import { Settings, Save, RefreshCw, Bell } from "lucide-react";
 
 const WEBHOOK_EVENT_OPTIONS = [
   { value: "crash", label: "Server Crash" },
@@ -40,7 +41,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const { toast } = useToast();
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
@@ -48,10 +49,7 @@ export default function SettingsPage() {
       const data = await api.get<Record<string, string>>("/admin/settings");
       setSettings({ ...DEFAULT_SETTINGS, ...data });
     } catch (e) {
-      setToast({
-        type: "error",
-        message: e instanceof Error ? e.message : "Failed to load settings",
-      });
+      toast("error", e instanceof Error ? e.message : "Failed to load settings");
     } finally {
       setLoading(false);
     }
@@ -60,13 +58,6 @@ export default function SettingsPage() {
   useEffect(() => {
     void fetchSettings();
   }, [fetchSettings]);
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
 
   function updateSetting(key: string, value: string) {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -90,12 +81,9 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await api.put("/admin/settings", settings);
-      setToast({ type: "success", message: "Settings saved successfully" });
+      toast("success", "Settings saved successfully");
     } catch (e) {
-      setToast({
-        type: "error",
-        message: e instanceof Error ? e.message : "Failed to save settings",
-      });
+      toast("error", e instanceof Error ? e.message : "Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -129,24 +117,6 @@ export default function SettingsPage() {
           Configure auto-restart, crash loop protection, and webhooks
         </p>
       </div>
-
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm ${
-            toast.type === "success"
-              ? "bg-green-500/10 text-green-400"
-              : "bg-destructive/10 text-destructive"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-          ) : (
-            <XCircle className="h-4 w-4 shrink-0" />
-          )}
-          {toast.message}
-        </div>
-      )}
 
       {/* Auto-Restart Section */}
       <div className="rounded-xl border border-border bg-card p-6">

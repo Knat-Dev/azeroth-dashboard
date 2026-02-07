@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { useToast } from "@/providers/toast-provider";
 import { PlayerChart } from "@/components/dashboard/player-chart";
 import {
   Server,
@@ -9,8 +10,6 @@ import {
   Radio,
   RefreshCw,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
   Activity,
   Clock,
 } from "lucide-react";
@@ -115,7 +114,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [restartTarget, setRestartTarget] = useState<string | null>(null);
   const [restarting, setRestarting] = useState(false);
-  const [restartResult, setRestartResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const { toast } = useToast();
   const [events, setEvents] = useState<ServerEvent[]>([]);
 
   const fetchHealth = useCallback(async () => {
@@ -141,7 +140,6 @@ export default function DashboardPage() {
   async function handleRestart() {
     if (!restartTarget) return;
     setRestarting(true);
-    setRestartResult(null);
     try {
       if (restartTarget === "all") {
         await api.post("/admin/restart/ac-worldserver");
@@ -149,19 +147,15 @@ export default function DashboardPage() {
       } else {
         await api.post(`/admin/restart/${restartTarget}`);
       }
-      setRestartResult({ type: "success", message: `${restartTarget === "all" ? "All servers" : restartTarget} restarted` });
+      toast("success", `${restartTarget === "all" ? "All servers" : restartTarget} restarted`);
       void fetchHealth();
     } catch (e) {
-      setRestartResult({ type: "error", message: e instanceof Error ? e.message : "Restart failed" });
+      toast("error", e instanceof Error ? e.message : "Restart failed");
     } finally {
       setRestarting(false);
       setRestartTarget(null);
     }
   }
-
-  useEffect(() => {
-    if (restartResult) { const t = setTimeout(() => setRestartResult(null), 4000); return () => clearTimeout(t); }
-  }, [restartResult]);
 
   return (
     <div className="space-y-4">
@@ -222,15 +216,6 @@ export default function DashboardPage() {
             Quick Actions
           </h2>
 
-          {restartResult && (
-            <div className={`mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
-              restartResult.type === "success" ? "bg-green-500/10 text-green-400" : "bg-destructive/10 text-destructive"
-            }`}>
-              {restartResult.type === "success" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
-              {restartResult.message}
-            </div>
-          )}
-
           <div className="flex flex-1 flex-col gap-2">
             <button onClick={() => setRestartTarget("ac-worldserver")}
               className="group flex flex-1 items-center gap-3 rounded-lg border border-border px-3 transition-colors hover:border-primary/40 hover:bg-primary/5">
@@ -268,11 +253,19 @@ export default function DashboardPage() {
 
       {/* Row 3: Recent Events — compact */}
       <div className="rounded-xl border border-border bg-card p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Recent Events
-          </h2>
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Recent Events
+            </h2>
+          </div>
+          <a
+            href="/events"
+            className="text-xs text-primary hover:text-primary/80 transition-colors"
+          >
+            View All
+          </a>
         </div>
 
         {events.length === 0 ? (

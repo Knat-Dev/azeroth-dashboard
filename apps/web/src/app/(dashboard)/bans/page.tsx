@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/providers/toast-provider";
 import { Ban, Search } from "lucide-react";
 
 interface BanEntry {
@@ -32,6 +33,7 @@ export default function BansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [unbanning, setUnbanning] = useState<number | null>(null);
+  const { toast } = useToast();
 
   // Search state
   const [search, setSearch] = useState("");
@@ -93,13 +95,13 @@ export default function BansPage() {
 
   function handleUnban(accountId: number) {
     setUnbanning(accountId);
-    setError("");
     api
       .delete(`/admin/accounts/${accountId}/ban`)
       .then(() => {
+        toast("success", "Account unbanned");
         fetchBans(page);
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => toast("error", e.message))
       .finally(() => setUnbanning(null));
   }
 

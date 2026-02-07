@@ -59,6 +59,43 @@ export class EventService implements OnModuleDestroy {
     }
   }
 
+  getEventsPaginated(
+    page = 1,
+    limit = 20,
+    container?: string,
+  ): { data: ServerEvent[]; total: number; page: number; limit: number } {
+    try {
+      const offset = (page - 1) * limit;
+      let total: number;
+      let data: ServerEvent[];
+
+      if (container) {
+        const countRow = this.db
+          .prepare(`SELECT COUNT(*) as count FROM events WHERE container = ?`)
+          .get(container) as { count: number };
+        total = countRow.count;
+        data = this.db
+          .prepare(
+            `SELECT * FROM events WHERE container = ? ORDER BY id DESC LIMIT ? OFFSET ?`,
+          )
+          .all(container, limit, offset) as ServerEvent[];
+      } else {
+        const countRow = this.db
+          .prepare(`SELECT COUNT(*) as count FROM events`)
+          .get() as { count: number };
+        total = countRow.count;
+        data = this.db
+          .prepare(`SELECT * FROM events ORDER BY id DESC LIMIT ? OFFSET ?`)
+          .all(limit, offset) as ServerEvent[];
+      }
+
+      return { data, total, page, limit };
+    } catch (err) {
+      this.logger.error(`Failed to get paginated events: ${err}`);
+      return { data: [], total: 0, page, limit };
+    }
+  }
+
   getEventsSince(since: string, container?: string): ServerEvent[] {
     try {
       if (container) {

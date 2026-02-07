@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/providers/toast-provider";
 import { UserCog, Plus, Search } from "lucide-react";
 
 interface Account {
@@ -49,7 +50,7 @@ export default function AccountsPage() {
   const [createGmLevel, setCreateGmLevel] = useState(0);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState("");
-  const [createSuccess, setCreateSuccess] = useState("");
+  const { toast } = useToast();
 
   const fetchAccounts = useCallback(
     (p: number, searchTerm?: string) => {
@@ -129,9 +130,10 @@ export default function AccountsPage() {
       })
       .then(() => {
         closeBanModal();
+        toast("success", "Account banned");
         fetchAccounts(page);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => toast("error", e.message));
   }
 
   // Create account modal handlers
@@ -141,7 +143,6 @@ export default function AccountsPage() {
     setCreateEmail("");
     setCreateGmLevel(0);
     setCreateError("");
-    setCreateSuccess("");
     setShowCreateModal(true);
   }
 
@@ -152,7 +153,6 @@ export default function AccountsPage() {
     setCreateEmail("");
     setCreateGmLevel(0);
     setCreateError("");
-    setCreateSuccess("");
     setCreateLoading(false);
   }
 
@@ -160,7 +160,6 @@ export default function AccountsPage() {
     if (!createUsername.trim() || !createPassword.trim()) return;
     setCreateLoading(true);
     setCreateError("");
-    setCreateSuccess("");
     api
       .post("/admin/accounts", {
         username: createUsername,
@@ -169,11 +168,9 @@ export default function AccountsPage() {
         gmLevel: createGmLevel,
       })
       .then(() => {
-        setCreateSuccess("Account created successfully.");
+        closeCreateModal();
+        toast("success", "Account created successfully");
         fetchAccounts(1);
-        setTimeout(() => {
-          closeCreateModal();
-        }, 1000);
       })
       .catch((e) => {
         setCreateError(e.message);
@@ -390,12 +387,6 @@ export default function AccountsPage() {
             <h3 className="mb-4 text-lg font-semibold text-foreground">
               Create Account
             </h3>
-
-            {createSuccess && (
-              <div className="mb-4 rounded-lg bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
-                {createSuccess}
-              </div>
-            )}
 
             {createError && (
               <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">

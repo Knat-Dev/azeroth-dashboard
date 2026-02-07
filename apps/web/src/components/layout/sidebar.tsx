@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 import {
+  Activity,
   Ban,
   Database,
   Home,
@@ -31,6 +32,7 @@ const mgmtItems = [
 ];
 
 const systemItems = [
+  { href: "/events", label: "Events", icon: Activity },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
