@@ -7,7 +7,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:7780',
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:7790',
     credentials: true,
   });
   app.useGlobalPipes(
@@ -18,6 +18,6 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 7781, '0.0.0.0');
+  await app.listen(process.env.PORT ?? 7791, '0.0.0.0');
 }
 bootstrap();
