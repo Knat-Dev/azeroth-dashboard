@@ -28,12 +28,12 @@ export class AdminService {
       accountIds.length > 0
         ? await this.accountAccessRepo
             .createQueryBuilder('aa')
-            .where('aa.AccountID IN (:...ids)', { ids: accountIds })
+            .where('aa.id IN (:...ids)', { ids: accountIds })
             .getMany()
         : [];
 
     const accessMap = new Map(
-      accessRecords.map((a) => [a.accountId, a.securityLevel]),
+      accessRecords.map((a) => [a.id, a.gmlevel]),
     );
 
     return {

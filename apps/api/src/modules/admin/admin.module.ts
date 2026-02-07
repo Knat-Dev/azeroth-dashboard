@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../auth/auth.module.js';
 import { AdminController } from './admin.controller.js';
 import { AdminService } from './admin.service.js';
 import { SoapService } from './soap.service.js';
@@ -22,6 +23,7 @@ import { LogIpAction } from '../../entities/auth/log-ip-action.entity.js';
       [Account, AccountAccess, AccountBanned, Autobroadcast, Log, LogIpAction],
       'auth',
     ),
+    AuthModule,
   ],
   controllers: [
     AdminController,

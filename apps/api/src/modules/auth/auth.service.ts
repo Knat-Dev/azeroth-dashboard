@@ -13,6 +13,7 @@ import {
   makeRegistrationData,
   checkPassword,
 } from './srp6.util.js';
+import { CredentialCacheService } from './credential-cache.service.js';
 
 const MAX_ACCOUNT_STR = 17;
 const MAX_PASS_STR = 16;
@@ -25,6 +26,7 @@ export class AuthService {
     @InjectRepository(AccountAccess, 'auth')
     private accountAccessRepo: Repository<AccountAccess>,
     private jwtService: JwtService,
+    private credentialCache: CredentialCacheService,
   ) {}
 
   async register(username: string, password: string, email?: string) {
@@ -56,6 +58,7 @@ export class AuthService {
     });
 
     await this.accountRepo.save(account);
+    this.credentialCache.store(account.id, password);
 
     return this.buildAuthResponse(account, 0);
   }
@@ -75,6 +78,7 @@ export class AuthService {
     }
 
     const gmLevel = await this.getGmLevel(account.id);
+    this.credentialCache.store(account.id, password);
 
     return this.buildAuthResponse(account, gmLevel);
   }
@@ -93,9 +97,9 @@ export class AuthService {
 
   private async getGmLevel(accountId: number): Promise<number> {
     const access = await this.accountAccessRepo.findOne({
-      where: { accountId },
+      where: { id: accountId },
     });
-    return access?.securityLevel ?? 0;
+    return access?.gmlevel ?? 0;
   }
 
   private buildAuthResponse(account: Account, gmLevel: number) {

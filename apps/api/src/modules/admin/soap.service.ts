@@ -1,23 +1,34 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { CredentialCacheService } from '../auth/credential-cache.service.js';
 
 @Injectable()
 export class SoapService {
   private readonly logger = new Logger(SoapService.name);
   private readonly host: string;
   private readonly port: number;
-  private readonly user: string;
-  private readonly password: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private credentialCache: CredentialCacheService,
+  ) {
     this.host = configService.get<string>('soap.host', 'localhost');
     this.port = configService.get<number>('soap.port', 7878);
-    this.user = configService.get<string>('soap.user', 'admin');
-    this.password = configService.get<string>('soap.password', 'admin');
   }
 
-  async executeCommand(command: string): Promise<{ success: boolean; message: string }> {
+  async executeCommand(
+    command: string,
+    userId: number,
+    username: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const password = this.credentialCache.retrieve(userId);
+    if (!password) {
+      throw new UnauthorizedException(
+        'Session expired. Please log out and log back in to use SOAP commands.',
+      );
+    }
+
     const url = `http://${this.host}:${this.port}/`;
 
     const envelope = `<?xml version="1.0" encoding="utf-8"?>
@@ -33,7 +44,7 @@ export class SoapService {
     try {
       const response = await axios.post(url, envelope, {
         headers: { 'Content-Type': 'text/xml; charset=utf-8' },
-        auth: { username: this.user, password: this.password },
+        auth: { username, password },
         timeout: 10000,
       });
 
@@ -64,7 +75,8 @@ export class SoapService {
 
   private parseResponse(xml: string): string {
     const match = xml.match(/<result[^>]*>([\s\S]*?)<\/result>/);
-    return match?.[1]?.trim() ?? xml;
+    const raw = match?.[1]?.trim() ?? xml;
+    return raw.replace(/&#xD;/g, '').replace(/&#xA;/g, '\n');
   }
 
   private parseFault(xml: string): string {

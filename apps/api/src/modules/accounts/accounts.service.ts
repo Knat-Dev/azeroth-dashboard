@@ -20,7 +20,7 @@ export class AccountsService {
   async getProfile(accountId: number) {
     const account = await this.accountRepo.findOneByOrFail({ id: accountId });
     const access = await this.accountAccessRepo.findOne({
-      where: { accountId },
+      where: { id: accountId },
     });
 
     return {
@@ -31,7 +31,7 @@ export class AccountsService {
       lastIp: account.lastIp,
       lastLogin: account.lastLogin,
       expansion: account.expansion,
-      gmLevel: access?.securityLevel ?? 0,
+      gmLevel: access?.gmlevel ?? 0,
     };
   }
 

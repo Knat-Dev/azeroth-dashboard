@@ -6,14 +6,12 @@ export default () => ({
   soap: {
     host: process.env.SOAP_HOST ?? 'localhost',
     port: parseInt(process.env.SOAP_PORT ?? '7878', 10),
-    user: process.env.SOAP_USER ?? 'admin',
-    password: process.env.SOAP_PASSWORD ?? 'admin',
   },
   backup: {
     retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS ?? '30', 10),
-    dir: '/backups',
+    dir: process.env.BACKUP_DIR ?? (process.env.NODE_ENV === 'production' ? '/backups' : './backups'),
   },
   logs: {
-    dir: process.env.AC_LOGS_DIR ?? '/logs',
+    dir: process.env.AC_LOGS_DIR ?? (process.env.NODE_ENV === 'production' ? '/logs' : './logs'),
   },
 });

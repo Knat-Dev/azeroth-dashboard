@@ -1,0 +1,22 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function formatGold(copper: number) {
+  const gold = Math.floor(copper / 10000);
+  const silver = Math.floor((copper % 10000) / 100);
+  const cop = copper % 100;
+  return `${gold}g ${silver}s ${cop}c`;
+}
+
+export function formatPlaytime(seconds: number) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}

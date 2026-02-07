@@ -26,7 +26,8 @@ export class BackupService implements OnModuleInit {
   private scheduleTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private configService: ConfigService) {
-    this.backupDir = configService.get<string>('backup.dir', '/backups');
+    this.backupDir = configService.get<string>('backup.dir') ??
+      (process.env.NODE_ENV === 'production' ? '/backups' : join(process.cwd(), 'backups'));
     this.dbHost = configService.get<string>('DB_HOST', 'localhost');
     this.dbPort = configService.get<string>('DB_PORT', '3306');
     this.dbPassword = configService.get<string>('DB_ROOT_PASSWORD', 'password');

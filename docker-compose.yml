@@ -4,18 +4,21 @@ services:
       context: .
       dockerfile: docker/api.Dockerfile
     ports:
-      - "${API_PORT:-3001}:3001"
+      - "${API_PORT:-7781}:3001"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - ac-network
     environment:
-      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_HOST=${DB_HOST:-ac-database}
       - DB_PORT=${DB_PORT:-3306}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-password}
-      - SOAP_HOST=${SOAP_HOST:-host.docker.internal}
+      - SOAP_HOST=${SOAP_HOST:-ac-worldserver}
       - SOAP_PORT=${SOAP_PORT:-7878}
-      - SOAP_USER=${SOAP_USER:-admin}
-      - SOAP_PASSWORD=${SOAP_PASSWORD:-admin}
       - JWT_SECRET=${JWT_SECRET:-change-me}
+      - CORS_ORIGIN=http://localhost:${DASHBOARD_PORT:-7780}
+      - PORT=3001
     volumes:
       - ${AC_LOGS_DIR:-../env/dist/logs}:/logs:ro
       - dashboard-backups:/backups
@@ -25,13 +28,18 @@ services:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-7781}/api
     ports:
-      - "${DASHBOARD_PORT:-3000}:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:${API_PORT:-3001}/api
+      - "${DASHBOARD_PORT:-7780}:3000"
     depends_on:
       - dashboard-api
     restart: unless-stopped
+
+networks:
+  ac-network:
+    external: true
+    name: azerothcore-wotlk_ac-network
 
 volumes:
   dashboard-backups:

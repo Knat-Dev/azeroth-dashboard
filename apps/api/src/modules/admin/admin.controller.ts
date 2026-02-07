@@ -71,7 +71,10 @@ export class AdminController {
   }
 
   @Post('command')
-  executeCommand(@Body() body: { command: string }) {
-    return this.soapService.executeCommand(body.command);
+  executeCommand(
+    @CurrentUser() user: { id: number; username: string },
+    @Body() body: { command: string },
+  ) {
+    return this.soapService.executeCommand(body.command, user.id, user.username);
   }
 }

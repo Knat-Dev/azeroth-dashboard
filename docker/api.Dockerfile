@@ -4,23 +4,29 @@ RUN apk add --no-cache mysql-client
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/ui/package.json ./packages/ui/
+RUN pnpm install --frozen-lockfile --prod=false
 
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app ./
 COPY . .
-RUN pnpm --filter @repo/shared build 2>/dev/null || true
 RUN pnpm --filter api build
+# pnpm deploy creates a standalone copy with real node_modules (no symlinks)
+RUN pnpm --filter api deploy /app/deployed --prod
 
 FROM base AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 RUN mkdir -p /backups
+
+COPY --from=builder /app/deployed/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/node_modules ./node_modules
 COPY --from=builder /app/apps/api/package.json ./
 
 EXPOSE 3001

@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0e1a;
+  --color-foreground: #e5e7eb;
+  --color-card: #1a1f2e;
+  --color-card-foreground: #e5e7eb;
+  --color-popover: #1a1f2e;
+  --color-popover-foreground: #e5e7eb;
+  --color-primary: #f5a623;
+  --color-primary-foreground: #0a0e1a;
+  --color-secondary: #1f2937;
+  --color-secondary-foreground: #e5e7eb;
+  --color-muted: #1f2937;
+  --color-muted-foreground: #9ca3af;
+  --color-accent: #4a9eff;
+  --color-accent-foreground: #0a0e1a;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #e5e7eb;
+  --color-border: #2a2f3e;
+  --color-input: #2a2f3e;
+  --color-ring: #f5a623;
+  --radius: 0.5rem;
+
+  /* WoW class colors */
+  --color-warrior: #C79C6E;
+  --color-paladin: #F58CBA;
+  --color-hunter: #ABD473;
+  --color-rogue: #FFF569;
+  --color-priest: #FFFFFF;
+  --color-death-knight: #C41F3B;
+  --color-shaman: #0070DE;
+  --color-mage: #69CCF0;
+  --color-warlock: #9482C9;
+  --color-druid: #FF7D0A;
+
+  /* Faction colors */
+  --color-alliance: #0078FF;
+  --color-horde: #B30000;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+* {
+  border-color: var(--color-border);
+}
