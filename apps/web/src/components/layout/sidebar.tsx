@@ -50,14 +50,17 @@ function NavSection({
 }) {
   return (
     <div className="mb-3">
-      <div className="mb-1.5 px-4 flex items-center h-4">
-        {expanded ? (
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {label}
-          </p>
-        ) : (
-          <div className="w-full border-t border-border" />
-        )}
+      <div className="mb-1.5 px-4 flex items-center h-4 relative">
+        <p className={cn(
+          "text-xs font-medium uppercase tracking-wider text-muted-foreground transition-opacity duration-200 absolute inset-x-4",
+          expanded ? "opacity-100" : "opacity-0",
+        )}>
+          {label}
+        </p>
+        <div className={cn(
+          "w-full border-t border-border transition-opacity duration-200",
+          expanded ? "opacity-0" : "opacity-100",
+        )} />
       </div>
       <div className="space-y-0.5">
         {items.map((item) => (
