@@ -105,8 +105,8 @@ function ThemeToggle({ expanded }: { expanded: boolean }) {
   return (
     <div className="border-t border-border px-2 py-2">
       <div className={cn(
-        "flex items-center rounded-lg",
-        expanded ? "justify-center gap-1 px-1" : "flex-col gap-1 md:flex-col",
+        "flex items-center rounded-lg justify-center gap-1 px-1",
+        !expanded && "md:flex-col",
       )}>
         {themeOptions.map((opt) => (
           <button
