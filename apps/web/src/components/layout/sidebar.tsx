@@ -16,7 +16,6 @@ import {
   UserCog,
   Ban,
   Radio,
-  FileText,
   Database,
   LogOut,
 } from "lucide-react";
@@ -33,9 +32,8 @@ const adminItems = [
   { href: "/admin", label: "Admin Overview", icon: Home },
   { href: "/admin/accounts", label: "Accounts", icon: UserCog },
   { href: "/admin/bans", label: "Bans", icon: Ban },
-  { href: "/admin/console", label: "SOAP Console", icon: Terminal },
+  { href: "/admin/console", label: "Console", icon: Terminal },
   { href: "/admin/broadcast", label: "Broadcast", icon: Radio },
-  { href: "/admin/logs", label: "Logs", icon: FileText },
   { href: "/admin/backups", label: "Backups", icon: Database },
 ];
 

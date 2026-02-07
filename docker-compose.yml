@@ -20,7 +20,7 @@ services:
       - CORS_ORIGIN=http://localhost:${DASHBOARD_PORT:-7780}
       - PORT=3001
     volumes:
-      - ${AC_LOGS_DIR:-../env/dist/logs}:/logs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - dashboard-backups:/backups
     restart: unless-stopped
 

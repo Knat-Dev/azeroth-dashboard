@@ -3,7 +3,7 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 @Entity({ name: 'logs_ip_actions' })
 export class LogIpAction {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })
-  unique_id!: number;
+  id!: number;
 
   @Column({ type: 'int', unsigned: true })
   account_id!: number;
@@ -22,6 +22,9 @@ export class LogIpAction {
 
   @Column({ type: 'int', unsigned: true })
   unixtime!: number;
+
+  @Column({ type: 'timestamp' })
+  time!: Date;
 
   @Column({ type: 'text', nullable: true })
   comment!: string | null;

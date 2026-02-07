@@ -1,54 +1,80 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Res,
+  UseGuards,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as express from 'express';
 import { LogsService } from './logs.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { GmLevel } from '../../common/enums/gm-level.enum.js';
+import type { JwtPayload } from '../auth/jwt.strategy.js';
 
 @Controller('admin/logs')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(GmLevel.ADMINISTRATOR)
 export class LogsController {
-  constructor(private logsService: LogsService) {}
+  constructor(
+    private logsService: LogsService,
+    private jwtService: JwtService,
+  ) {}
 
-  @Get()
-  queryLogs(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('level') level?: string,
-    @Query('type') type?: string,
-  ) {
-    return this.logsService.queryLogs({
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
-      level: level ? parseInt(level, 10) : undefined,
-      type,
-    });
+  @Get('containers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(GmLevel.ADMINISTRATOR)
+  listContainers() {
+    return this.logsService.listContainers();
   }
 
-  @Get('ip-actions')
-  queryIpActions(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('accountId') accountId?: string,
-    @Query('ip') ip?: string,
+  @Get('containers/:name')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(GmLevel.ADMINISTRATOR)
+  getContainerLogs(
+    @Param('name') name: string,
+    @Query('tail') tail?: string,
   ) {
-    return this.logsService.queryIpActions({
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
-      accountId: accountId ? parseInt(accountId, 10) : undefined,
-      ip,
-    });
+    return this.logsService.getContainerLogs(
+      name,
+      tail ? parseInt(tail, 10) : 500,
+    );
   }
 
-  @Get('files')
-  readLogFile(
-    @Query('file') file: string,
-    @Query('lines') lines?: string,
+  /**
+   * SSE endpoint for streaming container logs.
+   * EventSource can't send Authorization headers, so we accept the JWT
+   * as a query parameter and validate it manually.
+   */
+  @Get('containers/:name/stream')
+  async streamLogs(
+    @Param('name') name: string,
+    @Query('token') token: string,
+    @Query('tail') tail: string,
+    @Res() res: express.Response,
   ) {
-    return this.logsService.readLogFile(
-      file ?? 'Server.log',
-      lines ? parseInt(lines, 10) : 200,
+    if (!token) {
+      throw new UnauthorizedException('Token required');
+    }
+
+    let payload: JwtPayload;
+    try {
+      payload = this.jwtService.verify<JwtPayload>(token);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    if ((payload.gmLevel ?? 0) < GmLevel.ADMINISTRATOR) {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    await this.logsService.streamLogs(
+      name,
+      tail ? parseInt(tail, 10) : 500,
+      res,
     );
   }
 }

@@ -39,6 +39,15 @@
   --color-horde: #B30000;
 }
 
+:root {
+  color-scheme: dark;
+}
+
+.container {
+  padding: 25px;
+  height: 2000px;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);

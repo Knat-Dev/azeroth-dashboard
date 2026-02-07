@@ -11,7 +11,4 @@ export default () => ({
     retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS ?? '30', 10),
     dir: process.env.BACKUP_DIR ?? (process.env.NODE_ENV === 'production' ? '/backups' : './backups'),
   },
-  logs: {
-    dir: process.env.AC_LOGS_DIR ?? (process.env.NODE_ENV === 'production' ? '/logs' : './logs'),
-  },
 });

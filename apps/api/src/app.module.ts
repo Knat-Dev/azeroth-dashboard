@@ -15,8 +15,6 @@ import { AccountAccess } from './entities/auth/account-access.entity.js';
 import { AccountBanned } from './entities/auth/account-banned.entity.js';
 import { Realmlist } from './entities/auth/realmlist.entity.js';
 import { Autobroadcast } from './entities/auth/autobroadcast.entity.js';
-import { Log } from './entities/auth/log.entity.js';
-import { LogIpAction } from './entities/auth/log-ip-action.entity.js';
 
 // Characters DB entities
 import { Character } from './entities/characters/character.entity.js';
@@ -53,8 +51,6 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
           AccountBanned,
           Realmlist,
           Autobroadcast,
-          Log,
-          LogIpAction,
         ],
         synchronize: false,
       }),
