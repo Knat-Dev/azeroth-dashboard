@@ -229,7 +229,8 @@ export default function ConsolePage() {
       pushLines(`\x1b[31m> ${cmd}\x1b[0m`, `\x1b[31m${msg}\x1b[0m`);
     } finally {
       setExecuting(false);
-      inputRef.current?.focus();
+      // Re-focus after React re-renders the input as enabled
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   }
 
@@ -335,7 +336,10 @@ export default function ConsolePage() {
       )}
 
       {/* Terminal */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-[#1a1b26]">
+      <div
+        onClick={() => inputRef.current?.focus()}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-[#1a1b26]"
+      >
         {/* Terminal header bar */}
         <div className="flex items-center justify-between border-b border-border/50 bg-[#13141c] px-4 py-2">
           <div className="flex items-center gap-2">
