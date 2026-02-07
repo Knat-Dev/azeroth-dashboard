@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, Logger, OnModuleInit, forwardRef, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -7,6 +7,17 @@ import { join } from 'path';
 import { WebhookService } from '../webhook/webhook.service.js';
 
 const execAsync = promisify(exec);
+
+const ALLOWED_DATABASES = ['acore_auth', 'acore_characters', 'acore_playerbots', 'acore_world'];
+const MYSQLDUMP_TIMEOUT_MS = 300_000; // 5 minutes
+const SCHEDULE_CHECK_INTERVAL_MS = 60_000; // 1 minute
+const MIN_VALID_BACKUP_SIZE = 100; // bytes
+
+function assertSafeFilename(filename: string): void {
+  if (!filename || /[\/\\]/.test(filename) || filename.includes('..') || !filename.endsWith('.sql.gz')) {
+    throw new BadRequestException('Invalid backup filename');
+  }
+}
 
 export interface BackupScheduleConfig {
   enabled: boolean;
@@ -54,6 +65,11 @@ export class BackupService implements OnModuleInit {
   }
 
   async triggerBackup(databases: string[]) {
+    for (const db of databases) {
+      if (!ALLOWED_DATABASES.includes(db)) {
+        throw new BadRequestException(`Invalid database name: ${db}`);
+      }
+    }
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const results = [];
 
@@ -63,11 +79,15 @@ export class BackupService implements OnModuleInit {
 
       try {
         await execAsync(
-          `mysqldump -h ${this.dbHost} -P ${this.dbPort} -u root -p'${this.dbPassword}' ${db} | gzip > '${filePath}'`,
-          { timeout: 300000 },
+          `set -o pipefail; mysqldump --protocol=tcp -h ${this.dbHost} -P ${this.dbPort} -u root -p'${this.dbPassword}' ${db} | gzip > '${filePath}'`,
+          { timeout: MYSQLDUMP_TIMEOUT_MS, shell: '/bin/bash' },
         );
 
         const stat = await fs.stat(filePath);
+        if (stat.size <= MIN_VALID_BACKUP_SIZE) {
+          await fs.unlink(filePath).catch(() => {});
+          throw new Error(`Backup file too small (${stat.size} bytes) — mysqldump likely failed`);
+        }
         results.push({
           filename,
           database: db,
@@ -76,6 +96,7 @@ export class BackupService implements OnModuleInit {
         });
       } catch (error) {
         this.logger.error(`Backup failed for ${db}: ${error}`);
+        await fs.unlink(filePath).catch(() => {});
         results.push({ filename, database: db, size: 0, success: false });
       }
     }
@@ -127,10 +148,12 @@ export class BackupService implements OnModuleInit {
   }
 
   getBackupPath(filename: string): string {
+    assertSafeFilename(filename);
     return join(this.backupDir, filename);
   }
 
   async deleteBackup(filename: string) {
+    assertSafeFilename(filename);
     await fs.unlink(join(this.backupDir, filename));
     return { message: 'Backup deleted' };
   }
@@ -184,17 +207,39 @@ export class BackupService implements OnModuleInit {
           );
         }
       },
-      60 * 1000,
+      SCHEDULE_CHECK_INTERVAL_MS,
     );
   }
 
   private matchesCron(date: Date, cron: string): boolean {
-    const [minute, hour] = cron.split(' ');
+    const parts = cron.split(' ');
+    if (parts.length < 5) return false;
+    const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
     return (
-      date.getSeconds() === 0 &&
-      (minute === '*' || parseInt(minute!, 10) === date.getMinutes()) &&
-      (hour === '*' || parseInt(hour!, 10) === date.getHours())
+      this.cronFieldMatches(minute!, date.getMinutes()) &&
+      this.cronFieldMatches(hour!, date.getHours()) &&
+      this.cronFieldMatches(dayOfMonth!, date.getDate()) &&
+      this.cronFieldMatches(month!, date.getMonth() + 1) &&
+      this.cronFieldMatches(dayOfWeek!, date.getDay())
     );
+  }
+
+  private cronFieldMatches(field: string, value: number): boolean {
+    if (field === '*') return true;
+    // Handle step values: */5
+    if (field.startsWith('*/')) {
+      const step = parseInt(field.slice(2), 10);
+      return step > 0 && value % step === 0;
+    }
+    // Handle comma-separated: 1,15,30
+    return field.split(',').some((part) => {
+      // Handle ranges: 1-5
+      if (part.includes('-')) {
+        const [min, max] = part.split('-').map((n) => parseInt(n, 10));
+        return min !== undefined && max !== undefined && value >= min && value <= max;
+      }
+      return parseInt(part, 10) === value;
+    });
   }
 
   private async cleanOldBackups() {

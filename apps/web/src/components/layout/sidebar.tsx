@@ -37,7 +37,7 @@ const systemItems = [
 ];
 
 const fadeText = (expanded: boolean) =>
-  cn("whitespace-nowrap transition-opacity duration-200", expanded ? "opacity-100" : "opacity-0");
+  cn("whitespace-nowrap transition-opacity duration-200 opacity-100", expanded ? "md:opacity-100" : "md:opacity-0");
 
 function NavSection({
   label,
@@ -56,14 +56,14 @@ function NavSection({
     <div className="mb-3">
       <div className="mb-1.5 px-4 flex items-center h-4 relative">
         <p className={cn(
-          "text-xs font-medium uppercase tracking-wider text-muted-foreground transition-opacity duration-200 absolute inset-x-4",
-          expanded ? "opacity-100" : "opacity-0",
+          "text-xs font-medium uppercase tracking-wider text-muted-foreground transition-opacity duration-200 absolute inset-x-4 opacity-100",
+          expanded ? "md:opacity-100" : "md:opacity-0",
         )}>
           {label}
         </p>
         <div className={cn(
-          "w-full border-t border-border transition-opacity duration-200",
-          expanded ? "opacity-0" : "opacity-100",
+          "w-full border-t border-border transition-opacity duration-200 opacity-0",
+          expanded ? "md:opacity-0" : "md:opacity-100",
         )} />
       </div>
       <div className="space-y-0.5">

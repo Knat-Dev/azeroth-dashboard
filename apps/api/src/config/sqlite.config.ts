@@ -33,7 +33,8 @@ export function getDatabase(): Database.Database {
       container TEXT NOT NULL,
       event_type TEXT NOT NULL,
       details TEXT,
-      duration_ms INTEGER
+      duration_ms INTEGER,
+      actor TEXT
     );
 
     CREATE TABLE IF NOT EXISTS player_history (
@@ -51,6 +52,13 @@ export function getDatabase(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_events_container ON events(container);
     CREATE INDEX IF NOT EXISTS idx_player_history_timestamp ON player_history(timestamp);
   `);
+
+  // Migration: add actor column if missing (safe for existing DBs)
+  const columns = db.prepare(`PRAGMA table_info(events)`).all() as { name: string }[];
+  if (!columns.some((c) => c.name === 'actor')) {
+    db.exec(`ALTER TABLE events ADD COLUMN actor TEXT`);
+    logger.log('Migrated events table: added actor column');
+  }
 
   logger.log('SQLite tables initialized');
   return db;

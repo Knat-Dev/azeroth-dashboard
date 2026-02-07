@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
+const SOAP_TIMEOUT_MS = 10_000;
+
 @Injectable()
 export class SoapService {
   private readonly logger = new Logger(SoapService.name);
@@ -36,7 +38,7 @@ export class SoapService {
       const response = await axios.post(url, envelope, {
         headers: { 'Content-Type': 'text/xml; charset=utf-8' },
         auth: { username: this.username, password: this.password },
-        timeout: 10000,
+        timeout: SOAP_TIMEOUT_MS,
       });
 
       const result = this.parseResponse(response.data);

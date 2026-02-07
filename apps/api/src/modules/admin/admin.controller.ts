@@ -11,6 +11,7 @@ import {
   UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AdminService } from './admin.service.js';
 import { SoapService } from './soap.service.js';
 import { DockerService } from '../docker/docker.service.js';
@@ -53,16 +54,19 @@ export class AdminController {
   }
 
   @Post('accounts')
-  createAccount(
+  async createAccount(
+    @CurrentUser() user: { username: string },
     @Body() body: { username: string; password: string; email?: string; expansion?: number; gmLevel?: number },
   ) {
-    return this.adminService.createAccount(
+    const result = await this.adminService.createAccount(
       body.username,
       body.password,
       body.email,
       body.expansion,
       body.gmLevel,
     );
+    this.eventService.logEvent('dashboard', 'account_created', `Created account: ${body.username}`, undefined, user.username);
+    return result;
   }
 
   @Patch('accounts/:id')
@@ -74,22 +78,29 @@ export class AdminController {
   }
 
   @Post('accounts/:id/ban')
-  banAccount(
+  async banAccount(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { username: string },
     @Body() body: { reason: string; duration: number },
   ) {
-    return this.adminService.banAccount(
+    const result = await this.adminService.banAccount(
       id,
       user.username,
       body.reason,
       body.duration,
     );
+    this.eventService.logEvent('dashboard', 'account_banned', `Banned account #${id}: ${body.reason}`, undefined, user.username);
+    return result;
   }
 
   @Delete('accounts/:id/ban')
-  unbanAccount(@Param('id', ParseIntPipe) id: number) {
-    return this.adminService.unbanAccount(id);
+  async unbanAccount(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { username: string },
+  ) {
+    const result = await this.adminService.unbanAccount(id);
+    this.eventService.logEvent('dashboard', 'account_unbanned', `Unbanned account #${id}`, undefined, user.username);
+    return result;
   }
 
   @Get('bans')
@@ -106,12 +117,23 @@ export class AdminController {
   }
 
   @Post('command')
-  executeCommand(@Body() body: { command: string }) {
-    return this.soapService.executeCommand(body.command);
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  async executeCommand(
+    @CurrentUser() user: { username: string },
+    @Body() body: { command: string },
+  ) {
+    const result = await this.soapService.executeCommand(body.command);
+    this.eventService.logEvent('ac-worldserver', 'soap_command', body.command, undefined, user.username);
+    return result;
   }
 
   @Post('restart/:container')
-  async restartContainer(@Param('container') container: string) {
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  async restartContainer(
+    @CurrentUser() user: { username: string },
+    @Param('container') container: string,
+  ) {
+    this.eventService.logEvent(container, 'manual_restart', `Manual restart by admin`, undefined, user.username);
     this.monitorService.clearCrashLoop(container);
     return this.dockerService.restartContainer(container);
   }
@@ -122,10 +144,14 @@ export class AdminController {
   }
 
   @Put('settings')
-  updateSettings(@Body() body: Record<string, string>) {
+  updateSettings(
+    @CurrentUser() user: { username: string },
+    @Body() body: Record<string, string>,
+  ) {
     for (const [key, value] of Object.entries(body)) {
       this.eventService.setSetting(key, value);
     }
+    this.eventService.logEvent('dashboard', 'settings_updated', `Keys: ${Object.keys(body).join(', ')}`, undefined, user.username);
     // Reload runtime config in monitor + webhook services
     this.monitorService.reloadAllSettings();
     return { success: true };

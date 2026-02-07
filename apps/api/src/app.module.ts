@@ -1,6 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, type Provider } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import appConfig from './config/app.config.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { AccountsModule } from './modules/accounts/accounts.module.js';
@@ -35,6 +37,9 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
       isGlobal: true,
       load: [appConfig],
     }),
+
+    // Global rate limiting: 60 requests per minute per IP
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
 
     // Auth database
     TypeOrmModule.forRootAsync({
@@ -108,6 +113,9 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
     DockerModule,
     MonitorModule,
     WebhookModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard } satisfies Provider,
   ],
 })
 export class AppModule {}

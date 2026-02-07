@@ -27,10 +27,11 @@ export class DockerService {
   private readonly logger = new Logger(DockerService.name);
   private readonly socketPath = '/var/run/docker.sock';
 
-  private readonly allowedContainers = [
-    'ac-worldserver',
-    'ac-authserver',
-  ];
+  private readonly allowedContainers: string[] =
+    (process.env.ALLOWED_CONTAINERS ?? 'ac-worldserver,ac-authserver')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
   private validateContainer(name: string): void {
     if (!this.allowedContainers.includes(name)) {

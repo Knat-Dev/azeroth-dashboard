@@ -9,6 +9,7 @@ export interface ServerEvent {
   event_type: string;
   details: string | null;
   duration_ms: number | null;
+  actor: string | null;
 }
 
 @Injectable()
@@ -29,13 +30,14 @@ export class EventService implements OnModuleDestroy {
     eventType: string,
     details?: string,
     durationMs?: number,
+    actor?: string,
   ): void {
     try {
       this.db
         .prepare(
-          `INSERT INTO events (container, event_type, details, duration_ms) VALUES (?, ?, ?, ?)`,
+          `INSERT INTO events (container, event_type, details, duration_ms, actor) VALUES (?, ?, ?, ?, ?)`,
         )
-        .run(container, eventType, details ?? null, durationMs ?? null);
+        .run(container, eventType, details ?? null, durationMs ?? null, actor ?? null);
     } catch (err) {
       this.logger.error(`Failed to log event: ${err}`);
     }
