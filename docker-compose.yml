@@ -1,0 +1,37 @@
+services:
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    ports:
+      - "${API_PORT:-3001}:3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-password}
+      - SOAP_HOST=${SOAP_HOST:-host.docker.internal}
+      - SOAP_PORT=${SOAP_PORT:-7878}
+      - SOAP_USER=${SOAP_USER:-admin}
+      - SOAP_PASSWORD=${SOAP_PASSWORD:-admin}
+      - JWT_SECRET=${JWT_SECRET:-change-me}
+    volumes:
+      - ${AC_LOGS_DIR:-../env/dist/logs}:/logs:ro
+      - dashboard-backups:/backups
+    restart: unless-stopped
+
+  dashboard-web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    ports:
+      - "${DASHBOARD_PORT:-3000}:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:${API_PORT:-3001}/api
+    depends_on:
+      - dashboard-api
+    restart: unless-stopped
+
+volumes:
+  dashboard-backups:
