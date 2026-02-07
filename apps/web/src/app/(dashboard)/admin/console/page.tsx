@@ -65,10 +65,14 @@ const LogLine = memo(function LogLine({ html }: { html: string }) {
 let lineIdCounter = 0;
 
 export default function ConsolePage() {
-  const [containers, setContainers] = useState<ContainerInfo[]>([]);
-  const [activeContainer, setActiveContainer] = useState("");
+  // Optimistic defaults — show tabs immediately, assume connected
+  const [containers, setContainers] = useState<ContainerInfo[]>([
+    { name: "ac-worldserver", state: "running", status: "" },
+    { name: "ac-authserver", state: "running", status: "" },
+  ]);
+  const [activeContainer, setActiveContainer] = useState("ac-worldserver");
   const [lines, setLines] = useState<Line[]>([]);
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(true);
   const [error, setError] = useState("");
   const [command, setCommand] = useState("");
   const [executing, setExecuting] = useState(false);
@@ -77,17 +81,14 @@ export default function ConsolePage() {
   const termRef = useRef<HTMLDivElement>(null);
   const maxLines = 2000;
 
-  // Fetch available containers
+  // Fetch real container states in background (tabs already shown optimistically)
   useEffect(() => {
     api
       .get<ContainerInfo[]>("/admin/logs/containers")
       .then((res) => {
-        setContainers(res);
-        const ws = res.find((c) => c.name === "ac-worldserver");
-        if (ws) setActiveContainer(ws.name);
-        else if (res.length > 0) setActiveContainer(res[0]!.name);
+        if (res.length > 0) setContainers(res);
       })
-      .catch((e) => setError(e.message));
+      .catch(() => {});
   }, []);
 
   // With flex-col-reverse, scrollTop=0 is the bottom (newest).
@@ -124,9 +125,8 @@ export default function ConsolePage() {
       eventSourceRef.current = null;
     }
 
-    setLines([]);
-    setConnected(false);
     setError("");
+    let cleared = false;
 
     const token = getStoredToken();
     if (!token) {
@@ -144,6 +144,10 @@ export default function ConsolePage() {
     };
 
     es.onmessage = (event) => {
+      if (!cleared) {
+        setLines([]);
+        cleared = true;
+      }
       try {
         const line = JSON.parse(event.data);
         if (typeof line === "string") {
