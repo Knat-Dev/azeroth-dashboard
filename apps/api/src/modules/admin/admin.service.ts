@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Account } from '../../entities/auth/account.entity.js';
 import { AccountAccess } from '../../entities/auth/account-access.entity.js';
 import { AccountBanned } from '../../entities/auth/account-banned.entity.js';
 import { Character } from '../../entities/characters/character.entity.js';
+import { makeRegistrationData } from '../auth/srp6.util.js';
 
 @Injectable()
 export class AdminService {
@@ -19,12 +20,68 @@ export class AdminService {
     private characterRepo: Repository<Character>,
   ) {}
 
-  async listAccounts(page = 1, limit = 20) {
-    const [accounts, total] = await this.accountRepo.findAndCount({
-      order: { id: 'ASC' },
-      skip: (page - 1) * limit,
-      take: limit,
+  async createAccount(
+    username: string,
+    password: string,
+    email?: string,
+    expansion = 2,
+    gmLevel = 0,
+  ) {
+    const upperUsername = username.toUpperCase();
+
+    const existing = await this.accountRepo
+      .createQueryBuilder('a')
+      .where('UPPER(a.username) = :username', { username: upperUsername })
+      .getOne();
+    if (existing) throw new ConflictException('Username already exists');
+
+    const { salt, verifier } = makeRegistrationData(username, password);
+
+    const account = this.accountRepo.create({
+      username: upperUsername,
+      salt,
+      verifier,
+      email: (email ?? '').toUpperCase(),
+      regMail: (email ?? '').toUpperCase(),
+      expansion,
+      joindate: new Date(),
+      lastIp: '127.0.0.1',
+      locked: 0,
+      online: 0,
+      locale: 0,
+      failed_logins: 0,
+      totaltime: 0,
     });
+    const saved = await this.accountRepo.save(account);
+
+    if (gmLevel > 0) {
+      const access = this.accountAccessRepo.create({
+        id: saved.id,
+        gmlevel: gmLevel,
+        realmId: -1,
+        comment: 'Created via dashboard',
+      });
+      await this.accountAccessRepo.save(access);
+    }
+
+    return { id: saved.id, username: saved.username };
+  }
+
+  async listAccounts(page = 1, limit = 20, search?: string) {
+    const qb = this.accountRepo.createQueryBuilder('a');
+
+    if (search) {
+      qb.where(
+        'UPPER(a.username) LIKE :search OR a.email LIKE :search',
+        { search: `%${search.toUpperCase()}%` },
+      );
+    }
+
+    qb.orderBy('a.id', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [accounts, total] = await qb.getManyAndCount();
 
     const accountIds = accounts.map((a) => a.id);
     const accessRecords =
@@ -131,25 +188,39 @@ export class AdminService {
     };
   }
 
-  async listBans() {
-    const bans = await this.accountBannedRepo.find({
-      where: { active: 1 },
-    });
+  async listBans(page = 1, limit = 20, search?: string) {
+    // We need to join with account table for username search/display
+    const qb = this.accountBannedRepo
+      .createQueryBuilder('b')
+      .innerJoin(Account, 'a', 'a.id = b.id')
+      .addSelect('a.username', 'username')
+      .where('b.active = 1');
 
-    const accountIds = [...new Set(bans.map((b) => b.id))];
-    const accounts =
-      accountIds.length > 0
-        ? await this.accountRepo
-            .createQueryBuilder('a')
-            .where('a.id IN (:...ids)', { ids: accountIds })
-            .getMany()
-        : [];
+    if (search) {
+      qb.andWhere(
+        '(UPPER(a.username) LIKE :search OR b.banreason LIKE :search)',
+        { search: `%${search.toUpperCase()}%` },
+      );
+    }
 
-    const accountMap = new Map(accounts.map((a) => [a.id, a.username]));
+    const total = await qb.getCount();
 
-    return bans.map((b) => ({
-      ...b,
-      username: accountMap.get(b.id) ?? 'Unknown',
+    const raw = await qb
+      .orderBy('b.bandate', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawAndEntities();
+
+    const data = raw.entities.map((b, i) => ({
+      id: b.id,
+      accountId: b.id,
+      username: raw.raw[i]?.username ?? 'Unknown',
+      reason: b.banreason,
+      bannedBy: b.bannedby,
+      banDate: new Date(b.bandate * 1000).toISOString(),
+      unbanDate: new Date(b.unbandate * 1000).toISOString(),
     }));
+
+    return { data, total, page, limit };
   }
 }

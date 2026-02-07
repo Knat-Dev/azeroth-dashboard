@@ -43,10 +43,25 @@ export class AdminController {
   listAccounts(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('search') search?: string,
   ) {
     return this.adminService.listAccounts(
       parseInt(page ?? '1', 10),
       parseInt(limit ?? '20', 10),
+      search,
+    );
+  }
+
+  @Post('accounts')
+  createAccount(
+    @Body() body: { username: string; password: string; email?: string; expansion?: number; gmLevel?: number },
+  ) {
+    return this.adminService.createAccount(
+      body.username,
+      body.password,
+      body.email,
+      body.expansion,
+      body.gmLevel,
     );
   }
 
@@ -78,8 +93,16 @@ export class AdminController {
   }
 
   @Get('bans')
-  listBans() {
-    return this.adminService.listBans();
+  listBans(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.adminService.listBans(
+      parseInt(page ?? '1', 10),
+      parseInt(limit ?? '20', 10),
+      search,
+    );
   }
 
   @Post('command')

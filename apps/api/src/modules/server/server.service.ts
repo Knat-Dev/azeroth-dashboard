@@ -58,10 +58,21 @@ export class ServerService {
     return this.realmRepo.find();
   }
 
-  async getOnlinePlayers() {
-    return this.characterRepo.find({
-      where: { online: 1 },
-      select: ['guid', 'name', 'level', 'class', 'race', 'gender', 'zone', 'map'],
-    });
+  async getOnlinePlayers(page = 1, limit = 20, search?: string) {
+    const qb = this.characterRepo
+      .createQueryBuilder('c')
+      .select(['c.guid', 'c.name', 'c.level', 'c.class', 'c.race', 'c.gender', 'c.zone', 'c.map'])
+      .where('c.online = 1');
+
+    if (search) {
+      qb.andWhere('LOWER(c.name) LIKE LOWER(:search)', { search: `%${search}%` });
+    }
+
+    const [data, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total, page, limit };
   }
 }

@@ -60,8 +60,8 @@ export default function DashboardLayout({
       {!pinned && <div className="w-16 shrink-0" />}
       <div className="flex flex-1 flex-col overflow-hidden">
         <HealthBar />
-        <main className="flex-1 overflow-hidden px-6 py-4">
-          <div className="h-full overflow-y-auto">{children}</div>
+        <main className="flex-1 overflow-y-auto px-6 py-4">
+          {children}
         </main>
       </div>
     </div>

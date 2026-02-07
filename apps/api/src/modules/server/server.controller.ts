@@ -58,7 +58,15 @@ export class ServerController {
 
   @Get('players')
   @UseGuards(JwtAuthGuard)
-  getOnlinePlayers() {
-    return this.serverService.getOnlinePlayers();
+  getOnlinePlayers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.serverService.getOnlinePlayers(
+      parseInt(page ?? '1', 10),
+      parseInt(limit ?? '20', 10),
+      search,
+    );
   }
 }
