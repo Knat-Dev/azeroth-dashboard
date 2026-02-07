@@ -1,5 +1,15 @@
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 
+/**
+ * Maps to `acore_characters.guild` (read-only, synchronize: false).
+ *
+ * MySQL indexes (managed by AzerothCore):
+ *   - PRIMARY KEY (`guildid`)
+ *
+ * Implicit relations (no FK constraints in AC schema):
+ *   - guild.leaderguid → characters.guid
+ *   - guild.guildid    → guild_member.guildid
+ */
 @Entity({ name: 'guild' })
 export class Guild {
   @PrimaryColumn({ type: 'int', unsigned: true })

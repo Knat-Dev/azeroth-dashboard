@@ -74,7 +74,7 @@ describe('GuildsService', () => {
 
       expect(result.name).toBe('TestGuild');
       expect(result.members).toHaveLength(2);
-      expect(result.members[0].character.name).toBe('Leader');
+      expect(result.members[0]!.character!.name).toBe('Leader');
     });
 
     it('should throw NotFoundException for non-existent guild', async () => {

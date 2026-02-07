@@ -1,5 +1,16 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
+/**
+ * Maps to `acore_auth.realmlist` (read-only, synchronize: false).
+ *
+ * MySQL indexes (managed by AzerothCore):
+ *   - PRIMARY KEY (`id`)
+ *   - UNIQUE `idx_name` (`name`)
+ *
+ * Referenced by:
+ *   - account_access.RealmID → realmlist.id
+ *   - autobroadcast.realmid  → realmlist.id
+ */
 @Entity({ name: 'realmlist' })
 export class Realmlist {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })

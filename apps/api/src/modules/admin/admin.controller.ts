@@ -10,13 +10,17 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AdminService } from './admin.service.js';
 import { SoapService } from './soap.service.js';
 import { DockerService } from '../docker/docker.service.js';
 import { MonitorService } from '../monitor/monitor.service.js';
 import { EventService } from '../monitor/event.service.js';
+import { WebhookService } from '../webhook/webhook.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -24,6 +28,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { GmLevel } from '../../common/enums/gm-level.enum.js';
 import { CreateAccountDto, BanAccountDto, ExecuteCommandDto } from './admin.dto.js';
 
+@ApiTags('Admin')
+@ApiBearerAuth()
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(GmLevel.ADMINISTRATOR)
@@ -34,13 +40,17 @@ export class AdminController {
     private dockerService: DockerService,
     private monitorService: MonitorService,
     private eventService: EventService,
+    @Inject(forwardRef(() => WebhookService))
+    private webhookService: WebhookService,
   ) {}
 
+  @ApiOperation({ summary: 'Get admin dashboard stats' })
   @Get('stats')
   getStats() {
     return this.adminService.getStats();
   }
 
+  @ApiOperation({ summary: 'List accounts (paginated)' })
   @Get('accounts')
   listAccounts(
     @Query('page') page?: string,
@@ -54,6 +64,7 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: 'Create a new account' })
   @Post('accounts')
   async createAccount(
     @CurrentUser() user: { username: string },
@@ -70,6 +81,7 @@ export class AdminController {
     return result;
   }
 
+  @ApiOperation({ summary: 'Update an account' })
   @Patch('accounts/:id')
   updateAccount(
     @Param('id', ParseIntPipe) id: number,
@@ -78,6 +90,7 @@ export class AdminController {
     return this.adminService.updateAccount(id, data);
   }
 
+  @ApiOperation({ summary: 'Ban an account' })
   @Post('accounts/:id/ban')
   async banAccount(
     @Param('id', ParseIntPipe) id: number,
@@ -94,6 +107,7 @@ export class AdminController {
     return result;
   }
 
+  @ApiOperation({ summary: 'Unban an account' })
   @Delete('accounts/:id/ban')
   async unbanAccount(
     @Param('id', ParseIntPipe) id: number,
@@ -104,6 +118,7 @@ export class AdminController {
     return result;
   }
 
+  @ApiOperation({ summary: 'List active bans' })
   @Get('bans')
   listBans(
     @Query('page') page?: string,
@@ -117,6 +132,7 @@ export class AdminController {
     );
   }
 
+  @ApiOperation({ summary: 'Execute a SOAP command' })
   @Post('command')
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   async executeCommand(
@@ -128,6 +144,7 @@ export class AdminController {
     return result;
   }
 
+  @ApiOperation({ summary: 'Restart a Docker container' })
   @Post('restart/:container')
   @Throttle({ default: { ttl: 60_000, limit: 3 } })
   async restartContainer(
@@ -139,11 +156,13 @@ export class AdminController {
     return this.dockerService.restartContainer(container);
   }
 
+  @ApiOperation({ summary: 'Get all settings' })
   @Get('settings')
   getSettings() {
     return this.eventService.getAllSettings();
   }
 
+  @ApiOperation({ summary: 'Update settings' })
   @Put('settings')
   updateSettings(
     @CurrentUser() user: { username: string },
@@ -156,5 +175,12 @@ export class AdminController {
     // Reload runtime config in monitor + webhook services
     this.monitorService.reloadAllSettings();
     return { success: true };
+  }
+
+  @ApiOperation({ summary: 'Send a test webhook notification' })
+  @Post('webhook/test')
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  testWebhook() {
+    return this.webhookService.sendTestNotification();
   }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
+import type { OnlinePlayer, PaginatedResponse } from "@repo/shared";
 import {
   getClassName,
   getClassColor,
@@ -10,24 +11,6 @@ import {
   getFaction,
 } from "@/lib/wow-constants";
 import { Users, RefreshCw, Search } from "lucide-react";
-
-interface OnlinePlayer {
-  guid: number;
-  name: string;
-  level: number;
-  class: number;
-  race: number;
-  gender: number;
-  zone: number;
-  map: number;
-}
-
-interface PlayersApiResponse {
-  data: OnlinePlayer[];
-  total: number;
-  page: number;
-  limit: number;
-}
 
 const LIMIT = 20;
 const REFRESH_INTERVAL = 30;
@@ -79,7 +62,7 @@ export default function PlayersPage() {
         url += `&search=${encodeURIComponent(term)}`;
       }
       api
-        .get<PlayersApiResponse>(url)
+        .get<PaginatedResponse<OnlinePlayer>>(url)
         .then((res) => {
           setPlayers(res.data);
           setTotal(res.total);

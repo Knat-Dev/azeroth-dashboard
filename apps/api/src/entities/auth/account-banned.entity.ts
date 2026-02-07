@@ -1,5 +1,15 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
+/**
+ * Maps to `acore_auth.account_banned` (read-only, synchronize: false).
+ *
+ * MySQL indexes (managed by AzerothCore):
+ *   - PRIMARY KEY (`id`, `bandate`)
+ *   - INDEX `idx_active` (`active`)
+ *
+ * Implicit relations (no FK constraints in AC schema):
+ *   - account_banned.id → account.id
+ */
 @Entity({ name: 'account_banned' })
 export class AccountBanned {
   @PrimaryColumn({ type: 'int', unsigned: true, name: 'id' })

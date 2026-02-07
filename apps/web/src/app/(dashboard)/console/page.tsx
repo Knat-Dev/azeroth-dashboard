@@ -1,9 +1,8 @@
 "use client";
 
-import { api, API_URL } from "@/lib/api";
-import { getStoredToken } from "@/lib/auth";
+import { memo } from "react";
+import { useConsole, type ConsoleLine } from "@/hooks/use-console";
 import Convert from "ansi-to-html";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 const convert = new Convert({
   fg: "#d4d4d4",
@@ -34,261 +33,28 @@ function toHtml(raw: string): string {
   return convert.toHtml(raw);
 }
 
-interface ContainerInfo {
-  name: string;
-  state: string;
-  status: string;
-}
-
 const CONTAINER_LABELS: Record<string, string> = {
   "ac-worldserver": "Worldserver",
   "ac-authserver": "Authserver",
 };
 
-const HISTORY_KEY = "soap-command-history";
-const MAX_HISTORY = 50;
-
-function loadHistory(): string[] {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(history: string[]) {
-  localStorage.setItem(
-    HISTORY_KEY,
-    JSON.stringify(history.slice(-MAX_HISTORY)),
-  );
-}
-
-interface Line {
-  id: number;
-  html: string;
-}
-
 const LogLine = memo(function LogLine({ html }: { html: string }) {
   return (
     <div
-      className="whitespace-pre-wrap break-all text-[#d4d4d4]"
+      className="whitespace-pre-wrap break-all text-terminal-text"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 });
 
-let lineIdCounter = 0;
-
 export default function ConsolePage() {
-  const [containers, setContainers] = useState<ContainerInfo[]>([
-    { name: "ac-worldserver", state: "running", status: "" },
-    { name: "ac-authserver", state: "running", status: "" },
-  ]);
-  const [activeContainer, setActiveContainer] = useState("ac-worldserver");
-  const [lines, setLines] = useState<Line[]>([]);
-  const [connected, setConnected] = useState(true);
-  const [error, setError] = useState("");
-  const [command, setCommand] = useState("");
-  const [executing, setExecuting] = useState(false);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const reconnectAttempt = useRef(0);
-  const termRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const maxLines = 2000;
-
-  // Command history
-  const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [savedInput, setSavedInput] = useState("");
-
-  // Load history from localStorage on mount
-  useEffect(() => {
-    setHistory(loadHistory());
-  }, []);
-
-  const isWorldserver = activeContainer === "ac-worldserver";
-
-  // Fetch real container states in background
-  useEffect(() => {
-    api
-      .get<ContainerInfo[]>("/admin/logs/containers")
-      .then((res) => {
-        if (res.length > 0) setContainers(res);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (autoScroll && termRef.current) {
-      termRef.current.scrollTop = 0;
-    }
-  }, [lines, autoScroll]);
-
-  function handleScroll() {
-    if (!termRef.current) return;
-    const atBottom = termRef.current.scrollTop >= -40;
-    setAutoScroll(atBottom);
-  }
-
-  const pushLines = useCallback((...rawLines: string[]) => {
-    const newLines: Line[] = rawLines.map((raw) => ({
-      id: lineIdCounter++,
-      html: toHtml(raw),
-    }));
-    setLines((prev) => {
-      const next = [...prev, ...newLines];
-      return next.length > maxLines ? next.slice(-maxLines) : next;
-    });
-  }, []);
-
-  // Connect to SSE stream when active container changes
-  useEffect(() => {
-    if (!activeContainer) return;
-    let disposed = false;
-
-    function cleanup() {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-      if (reconnectTimer.current) {
-        clearTimeout(reconnectTimer.current);
-        reconnectTimer.current = null;
-      }
-    }
-
-    function connect() {
-      if (disposed) return;
-      cleanup();
-      setError("");
-
-      const token = getStoredToken();
-      if (!token) {
-        setError("Not authenticated");
-        return;
-      }
-
-      let cleared = false;
-      const url = `${API_URL}/admin/logs/containers/${activeContainer}/stream?token=${encodeURIComponent(token)}&tail=5000`;
-      const es = new EventSource(url);
-      eventSourceRef.current = es;
-
-      es.onopen = () => {
-        setConnected(true);
-        setError("");
-        reconnectAttempt.current = 0;
-      };
-
-      es.onmessage = (event) => {
-        if (!cleared) {
-          setLines([]);
-          cleared = true;
-        }
-        try {
-          const line = JSON.parse(event.data);
-          if (typeof line === "string") {
-            pushLines(line);
-          } else if (line?.error) {
-            setError(line.error);
-          }
-        } catch {
-          pushLines(event.data);
-        }
-      };
-
-      es.addEventListener("end", () => {
-        setConnected(false);
-      });
-
-      es.onerror = () => {
-        setConnected(false);
-        es.close();
-        eventSourceRef.current = null;
-        if (disposed) return;
-        // Reconnect with exponential backoff (1s, 2s, 4s, 8s, max 30s)
-        const delay = Math.min(1000 * 2 ** reconnectAttempt.current, 30_000);
-        reconnectAttempt.current++;
-        reconnectTimer.current = setTimeout(connect, delay);
-      };
-    }
-
-    connect();
-
-    return () => {
-      disposed = true;
-      cleanup();
-    };
-  }, [activeContainer, pushLines]);
-
-  async function handleCommand(e: React.FormEvent) {
-    e.preventDefault();
-    const cmd = command.trim();
-    if (!cmd) return;
-
-    // Push to history
-    const newHistory = [...history.filter((h) => h !== cmd), cmd];
-    setHistory(newHistory);
-    saveHistory(newHistory);
-    setHistoryIndex(-1);
-    setSavedInput("");
-
-    setExecuting(true);
-    try {
-      const res = await api.post<{ success: boolean; message: string }>(
-        "/admin/command",
-        { command: cmd },
-      );
-      const prefix = res.success ? "\x1b[32m" : "\x1b[31m";
-      const reset = "\x1b[0m";
-      pushLines(`${prefix}> ${cmd}${reset}`, `${prefix}${res.message}${reset}`);
-      setCommand("");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Command failed";
-      pushLines(`\x1b[31m> ${cmd}\x1b[0m`, `\x1b[31m${msg}\x1b[0m`);
-    } finally {
-      setExecuting(false);
-      // Re-focus after React re-renders the input as enabled
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (history.length === 0) return;
-
-      if (historyIndex === -1) {
-        setSavedInput(command);
-      }
-
-      const newIndex = historyIndex === -1
-        ? history.length - 1
-        : Math.max(0, historyIndex - 1);
-      setHistoryIndex(newIndex);
-      setCommand(history[newIndex] ?? "");
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (historyIndex === -1) return;
-
-      if (historyIndex >= history.length - 1) {
-        setHistoryIndex(-1);
-        setCommand(savedInput);
-      } else {
-        const newIndex = historyIndex + 1;
-        setHistoryIndex(newIndex);
-        setCommand(history[newIndex] ?? "");
-      }
-    }
-  }
-
-  function clearTerminal() {
-    setLines([]);
-  }
+  const {
+    containers, activeContainer, setActiveContainer,
+    lines, connected, error, command, setCommand, executing,
+    autoScroll, setAutoScroll, termRef, inputRef, isWorldserver,
+    setHistoryIndex,
+    handleScroll, handleCommand, handleKeyDown, clearTerminal,
+  } = useConsole(toHtml);
 
   return (
     <div className="flex h-full flex-col">
@@ -332,7 +98,7 @@ export default function ConsolePage() {
             onClick={() => setActiveContainer(c.name)}
             className={`flex cursor-pointer items-center gap-2 rounded-t-lg px-4 py-2 text-sm font-medium transition-colors ${
               activeContainer === c.name
-                ? "bg-[#1a1b26] text-foreground border border-b-0 border-border"
+                ? "bg-terminal text-foreground border border-b-0 border-border"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
@@ -361,10 +127,10 @@ export default function ConsolePage() {
       {/* Terminal */}
       <div
         onClick={() => inputRef.current?.focus()}
-        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-[#1a1b26]"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-terminal"
       >
         {/* Terminal header bar */}
-        <div className="flex items-center justify-between border-b border-border/50 bg-[#13141c] px-4 py-2">
+        <div className="flex items-center justify-between border-b border-border/50 bg-terminal-header px-4 py-2">
           <div className="flex items-center gap-2">
             <div className="flex gap-1.5">
               <div className="h-3 w-3 rounded-full bg-[#ff5f57]" />
@@ -405,7 +171,7 @@ export default function ConsolePage() {
                 : "Select a container above to view logs."}
             </div>
           ) : (
-            [...lines].reverse().map((line) => (
+            [...lines].reverse().map((line: ConsoleLine) => (
               <LogLine key={line.id} html={line.html} />
             ))
           )}
@@ -415,7 +181,7 @@ export default function ConsolePage() {
         {isWorldserver ? (
           <form
             onSubmit={handleCommand}
-            className="flex items-center gap-2 border-t border-border/50 bg-[#13141c] px-4 py-2.5"
+            className="flex items-center gap-2 border-t border-border/50 bg-terminal-header px-4 py-2.5"
           >
             <span className="font-mono text-sm text-primary">$</span>
             <input
@@ -427,7 +193,7 @@ export default function ConsolePage() {
                 setHistoryIndex(-1);
               }}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent font-mono text-sm text-[#d4d4d4] placeholder:text-muted-foreground/50 focus:outline-none"
+              className="flex-1 bg-transparent font-mono text-sm text-terminal-text placeholder:text-muted-foreground/50 focus:outline-none"
               placeholder="Type a SOAP command (e.g. .server info) — ↑↓ for history"
               disabled={executing}
             />
@@ -440,7 +206,7 @@ export default function ConsolePage() {
             </button>
           </form>
         ) : (
-          <div className="border-t border-border/50 bg-[#13141c] px-4 py-2.5">
+          <div className="border-t border-border/50 bg-terminal-header px-4 py-2.5">
             <span className="font-mono text-xs text-muted-foreground/50">
               SOAP commands are only available on the Worldserver tab
             </span>

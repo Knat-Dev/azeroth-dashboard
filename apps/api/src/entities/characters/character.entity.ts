@@ -1,5 +1,20 @@
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 
+/**
+ * Maps to `acore_characters.characters` (read-only, synchronize: false).
+ *
+ * MySQL indexes (managed by AzerothCore):
+ *   - PRIMARY KEY (`guid`)
+ *   - INDEX `idx_account` (`account`)
+ *   - INDEX `idx_online` (`online`)
+ *   - INDEX `idx_name` (`name`)
+ *
+ * Implicit relations (no FK constraints in AC schema):
+ *   - characters.account → account.id                (auth DB)
+ *   - characters.guid    → guild_member.guid
+ *   - characters.guid    → character_inventory.guid
+ *   - characters.guid    → item_instance.owner_guid
+ */
 @Entity({ name: 'characters' })
 export class Character {
   @PrimaryColumn({ type: 'int', unsigned: true })

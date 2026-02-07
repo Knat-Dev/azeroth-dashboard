@@ -2,10 +2,20 @@
   "name": "@repo/shared",
   "version": "0.0.1",
   "private": true,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "dev": "tsc --watch"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

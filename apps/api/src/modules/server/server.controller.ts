@@ -1,9 +1,12 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ServerService } from './server.service.js';
 import { MonitorService } from '../monitor/monitor.service.js';
 import { EventService } from '../monitor/event.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 
+@ApiTags('Server')
+@ApiBearerAuth()
 @Controller('server')
 export class ServerController {
   constructor(
@@ -12,28 +15,33 @@ export class ServerController {
     private eventService: EventService,
   ) {}
 
+  @ApiOperation({ summary: 'Get server status' })
   @Get('status')
   getStatus() {
     return this.serverService.getStatus();
   }
 
+  @ApiOperation({ summary: 'Get server health' })
   @Get('health')
   @UseGuards(JwtAuthGuard)
   getHealth() {
     return this.monitorService.getHealth();
   }
 
+  @ApiOperation({ summary: 'Get server stats' })
   @Get('stats')
   @UseGuards(JwtAuthGuard)
   getStats() {
     return this.serverService.getStats();
   }
 
+  @ApiOperation({ summary: 'List realms' })
   @Get('realms')
   getRealms() {
     return this.serverService.getRealms();
   }
 
+  @ApiOperation({ summary: 'Get server events' })
   @Get('events')
   @UseGuards(JwtAuthGuard)
   getEvents(
@@ -55,6 +63,7 @@ export class ServerController {
     );
   }
 
+  @ApiOperation({ summary: 'Get player count history' })
   @Get('player-history')
   @UseGuards(JwtAuthGuard)
   getPlayerHistory(@Query('range') range?: string) {
@@ -65,6 +74,7 @@ export class ServerController {
     return this.eventService.getPlayerHistory(r);
   }
 
+  @ApiOperation({ summary: 'List online players' })
   @Get('players')
   @UseGuards(JwtAuthGuard)
   getOnlinePlayers(

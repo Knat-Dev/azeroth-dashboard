@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import type { Response } from 'express';
 import { LogsService } from './logs.service.js';
@@ -17,6 +18,8 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { GmLevel } from '../../common/enums/gm-level.enum.js';
 import type { JwtPayload } from '../auth/jwt.strategy.js';
 
+@ApiTags('Logs')
+@ApiBearerAuth()
 @Controller('admin/logs')
 export class LogsController {
   constructor(
@@ -24,6 +27,7 @@ export class LogsController {
     private jwtService: JwtService,
   ) {}
 
+  @ApiOperation({ summary: 'List Docker containers' })
   @Get('containers')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GmLevel.ADMINISTRATOR)
@@ -31,6 +35,7 @@ export class LogsController {
     return this.logsService.listContainers();
   }
 
+  @ApiOperation({ summary: 'Get container logs' })
   @Get('containers/:name')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GmLevel.ADMINISTRATOR)
@@ -49,6 +54,7 @@ export class LogsController {
    * EventSource can't send Authorization headers, so we accept the JWT
    * as a query parameter and validate it manually.
    */
+  @ApiOperation({ summary: 'Stream container logs (SSE)' })
   @Get('containers/:name/stream')
   async streamLogs(
     @Param('name') name: string,

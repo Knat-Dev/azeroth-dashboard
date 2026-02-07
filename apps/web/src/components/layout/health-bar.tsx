@@ -1,16 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { HealthState } from "@repo/shared";
 import { Menu } from "lucide-react";
 import { api } from "@/lib/api";
-
-interface HealthState {
-  worldserver: { state: string; status: string };
-  authserver: { state: string; status: string };
-  soap: { connected: boolean };
-  players: { online: number };
-  lastUpdated: string;
-}
 
 function StatusDot({ state }: { state: "running" | "stopped" | "restarting" | "unknown" }) {
   const styles = {

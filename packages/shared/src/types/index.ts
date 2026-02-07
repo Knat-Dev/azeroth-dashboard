@@ -136,3 +136,82 @@ export interface AuthResponse {
     gmLevel: number;
   };
 }
+
+// API response shapes
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface ContainerHealth {
+  state: string;
+  status: string;
+  crashLoop?: boolean;
+}
+
+export interface HealthState {
+  worldserver: ContainerHealth;
+  authserver: ContainerHealth;
+  soap: { connected: boolean; degraded?: boolean };
+  players: { online: number };
+  lastUpdated: string;
+}
+
+export interface ServerEvent {
+  id: number;
+  timestamp: string;
+  container: string;
+  event_type: string;
+  details: string | null;
+  duration_ms: number | null;
+}
+
+export interface OnlinePlayer {
+  guid: number;
+  name: string;
+  level: number;
+  class: number;
+  race: number;
+  gender: number;
+  zone: number;
+  map: number;
+}
+
+export interface BanEntry {
+  id: number;
+  accountId: number;
+  username: string;
+  reason: string;
+  bannedBy: string;
+  banDate: string;
+  unbanDate: string;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  gmLevel: number;
+}
+
+export interface ContainerInfo {
+  name: string;
+  state: string;
+  status: string;
+}
+
+export interface PlayerHistoryPoint {
+  timestamp: string;
+  count: number;
+}
+
+export interface AccountListItem {
+  id: number;
+  username: string;
+  email: string;
+  gmLevel: number;
+  lastLogin: string;
+}

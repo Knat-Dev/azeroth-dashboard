@@ -1,20 +1,24 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { LoginDto } from './auth.dto.js';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @ApiOperation({ summary: 'Login with username and password' })
   @Post('login')
   @Throttle({ default: { ttl: 60_000, limit: 10 } })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.username, dto.password);
   }
 
+  @ApiOperation({ summary: 'Refresh JWT token' })
   @Post('refresh')
   @UseGuards(JwtAuthGuard)
   refresh(@CurrentUser() user: { id: number }) {

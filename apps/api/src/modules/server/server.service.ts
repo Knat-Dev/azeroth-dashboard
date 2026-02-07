@@ -13,11 +13,19 @@ export class ServerService {
     private characterRepo: Repository<Character>,
   ) {}
 
+  async getOnlineCount(): Promise<number> {
+    try {
+      return await this.characterRepo.count({
+        where: { online: 1 },
+      });
+    } catch {
+      return 0;
+    }
+  }
+
   async getStatus() {
     const realms = await this.realmRepo.find();
-    const onlineCount = await this.characterRepo.count({
-      where: { online: 1 },
-    });
+    const onlineCount = await this.getOnlineCount();
 
     const realm = realms[0];
     return {
@@ -41,10 +49,7 @@ export class ServerService {
       .select('COUNT(*)', 'count')
       .getRawMany();
 
-    const onlineCount = await this.characterRepo.count({
-      where: { online: 1 },
-    });
-
+    const onlineCount = await this.getOnlineCount();
     const totalCharacters = await this.characterRepo.count();
 
     return {

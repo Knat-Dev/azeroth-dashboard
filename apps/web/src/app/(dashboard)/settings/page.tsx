@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { api } from "@/lib/api";
-import { useToast } from "@/providers/toast-provider";
-import { Settings, Save, RefreshCw, Bell } from "lucide-react";
+import { useSettings, msToSeconds, secondsToMs } from "@/hooks/use-settings";
+import { Settings, Save, RefreshCw, Bell, Send } from "lucide-react";
 
 const WEBHOOK_EVENT_OPTIONS = [
   { value: "crash", label: "Server Crash" },
@@ -13,111 +11,11 @@ const WEBHOOK_EVENT_OPTIONS = [
   { value: "backup_failed", label: "Backup Failed" },
 ];
 
-const DEFAULT_SETTINGS: Record<string, string> = {
-  autoRestartEnabled: "false",
-  autoRestartCooldown: "10000",
-  autoRestartMaxRetries: "3",
-  autoRestartRetryInterval: "15000",
-  crashLoopThreshold: "3",
-  crashLoopWindow: "300000",
-  discordWebhookUrl: "",
-  webhookEvents: "crash,restart_failed,crash_loop,backup_success,backup_failed",
-};
-
-function msToSeconds(ms: string | undefined): string {
-  if (!ms) return "";
-  const num = parseInt(ms, 10);
-  if (isNaN(num)) return "";
-  return String(num / 1000);
-}
-
-function secondsToMs(seconds: string): string {
-  const num = parseFloat(seconds);
-  if (isNaN(num)) return "0";
-  return String(Math.round(num * 1000));
-}
-
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Record<string, string>>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const fetchSettings = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await api.get<Record<string, string>>("/admin/settings");
-      setSettings({ ...DEFAULT_SETTINGS, ...data });
-    } catch (e) {
-      toast("error", e instanceof Error ? e.message : "Failed to load settings");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchSettings();
-  }, [fetchSettings]);
-
-  function updateSetting(key: string, value: string) {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function getWebhookEvents(): string[] {
-    const raw = settings.webhookEvents || "";
-    if (!raw.trim()) return [];
-    return raw.split(",").map((s) => s.trim()).filter(Boolean);
-  }
-
-  function toggleWebhookEvent(event: string) {
-    const current = getWebhookEvents();
-    const next = current.includes(event)
-      ? current.filter((e) => e !== event)
-      : [...current, event];
-    updateSetting("webhookEvents", next.join(","));
-  }
-
-  function validateSettings(): string | null {
-    const cooldown = parseInt(settings.autoRestartCooldown, 10);
-    if (isNaN(cooldown) || cooldown < 0) return "Cooldown must be a non-negative number";
-
-    const maxRetries = parseInt(settings.autoRestartMaxRetries, 10);
-    if (isNaN(maxRetries) || maxRetries < 0 || maxRetries > 20) return "Max retries must be between 0 and 20";
-
-    const retryInterval = parseInt(settings.autoRestartRetryInterval, 10);
-    if (isNaN(retryInterval) || retryInterval < 0) return "Retry interval must be a non-negative number";
-
-    const threshold = parseInt(settings.crashLoopThreshold, 10);
-    if (isNaN(threshold) || threshold < 1 || threshold > 50) return "Crash threshold must be between 1 and 50";
-
-    const window = parseInt(settings.crashLoopWindow, 10);
-    if (isNaN(window) || window < 0) return "Detection window must be a non-negative number";
-
-    const webhookUrl = settings.discordWebhookUrl?.trim();
-    if (webhookUrl && !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
-      return "Webhook URL must start with https://discord.com/api/webhooks/";
-    }
-
-    return null;
-  }
-
-  async function handleSave() {
-    const validationError = validateSettings();
-    if (validationError) {
-      toast("error", validationError);
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await api.put("/admin/settings", settings);
-      toast("success", "Settings saved successfully");
-    } catch (e) {
-      toast("error", e instanceof Error ? e.message : "Failed to save settings");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const {
+    settings, loading, saving, testingSending, isDirty,
+    updateSetting, getWebhookEvents, toggleWebhookEvent, handleSave, handleTestWebhook,
+  } = useSettings();
 
   const inputClasses =
     "w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
@@ -360,9 +258,30 @@ export default function SettingsPage() {
               className={inputClasses}
               placeholder="https://discord.com/api/webhooks/..."
             />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Leave empty to disable Discord notifications
-            </p>
+            <div className="mt-2 flex items-center gap-3">
+              <p className="text-xs text-muted-foreground">
+                Leave empty to disable Discord notifications
+              </p>
+              {settings.discordWebhookUrl?.trim() && (
+                <button
+                  onClick={handleTestWebhook}
+                  disabled={testingSending}
+                  className="flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary/80 disabled:opacity-50"
+                >
+                  {testingSending ? (
+                    <>
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-3 w-3" />
+                      Send Test
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Webhook Events */}
@@ -394,10 +313,13 @@ export default function SettingsPage() {
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-3">
+        {isDirty && (
+          <span className="text-xs text-yellow-400">Unsaved changes</span>
+        )}
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !isDirty}
           className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
         >
           {saving ? (

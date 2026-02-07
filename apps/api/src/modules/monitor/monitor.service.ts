@@ -7,27 +7,14 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { DockerService } from '../docker/docker.service.js';
 import { SoapService } from '../admin/soap.service.js';
 import { EventService } from './event.service.js';
 import { WebhookService } from '../webhook/webhook.service.js';
-import { Character } from '../../entities/characters/character.entity.js';
+import { ServerService } from '../server/server.service.js';
+import type { ContainerHealth, HealthState } from '@repo/shared';
 
-export interface ContainerHealth {
-  state: string;
-  status: string;
-  crashLoop?: boolean;
-}
-
-export interface HealthState {
-  worldserver: ContainerHealth;
-  authserver: ContainerHealth;
-  soap: { connected: boolean; degraded: boolean };
-  players: { online: number };
-  lastUpdated: string;
-}
+export type { ContainerHealth, HealthState };
 
 const POLL_INTERVAL_MS = 5000;
 const SOAP_TIMEOUT_MS = parseInt(process.env.SOAP_TIMEOUT_MS ?? '5000', 10);
@@ -93,8 +80,8 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     @Inject(forwardRef(() => WebhookService))
     private webhookService: WebhookService,
     private configService: ConfigService,
-    @InjectRepository(Character, 'characters')
-    private characterRepo: Repository<Character>,
+    @Inject(forwardRef(() => ServerService))
+    private serverService: ServerService,
   ) {
     // Load defaults from env
     this.autoRestartEnabled =
@@ -200,7 +187,7 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
           this.dockerService.getContainerState('ac-worldserver'),
           this.dockerService.getContainerState('ac-authserver'),
           this.checkSoap(),
-          this.countOnlinePlayers(),
+          this.serverService.getOnlineCount(),
         ]);
 
       // Process state changes
@@ -466,16 +453,6 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
       return result.success;
     } catch {
       return false;
-    }
-  }
-
-  private async countOnlinePlayers(): Promise<number> {
-    try {
-      return await this.characterRepo.count({
-        where: { online: 1 },
-      });
-    } catch {
-      return 0;
     }
   }
 

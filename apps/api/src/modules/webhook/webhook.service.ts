@@ -67,6 +67,22 @@ export class WebhookService {
     void this.send(eventType, severity, title, details);
   }
 
+  /** Send a test notification (bypasses rate limit and event filter) */
+  async sendTestNotification(): Promise<{ success: boolean; message: string }> {
+    if (!this.discordUrl) {
+      return { success: false, message: 'No webhook URL configured' };
+    }
+    try {
+      await this.send('test', 'info', 'Test Notification', 'This is a test notification from Azeroth Dashboard.');
+      return { success: true, message: 'Test notification sent' };
+    } catch (err) {
+      return {
+        success: false,
+        message: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
+  }
+
   private async send(
     eventType: string,
     severity: Severity,

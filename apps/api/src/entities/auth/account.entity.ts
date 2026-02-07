@@ -1,5 +1,18 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
+/**
+ * Maps to `acore_auth.account` (read-only, synchronize: false).
+ *
+ * MySQL indexes (managed by AzerothCore):
+ *   - PRIMARY KEY (`id`)
+ *   - UNIQUE `idx_username` (`username`)
+ *
+ * Implicit relations (no FK constraints in AC schema):
+ *   - account.id  → account_access.id
+ *   - account.id  → account_banned.id
+ *   - account.id  → logs_ip_actions.account_id
+ *   - account.id  → characters.account  (characters DB)
+ */
 @Entity({ name: 'account' })
 export class Account {
   @PrimaryGeneratedColumn({ type: 'int', unsigned: true })

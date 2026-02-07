@@ -1,12 +1,9 @@
+import type { User } from "@repo/shared";
+
+export type { User };
+
 const TOKEN_KEY = "azeroth_token";
 const USER_KEY = "azeroth_user";
-
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  gmLevel: number;
-}
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;

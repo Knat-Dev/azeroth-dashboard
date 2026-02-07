@@ -22,6 +22,11 @@
   --color-ring: #f5a623;
   --radius: 0.5rem;
 
+  /* Terminal — stays dark in both themes */
+  --color-terminal: #1a1b26;
+  --color-terminal-header: #13141c;
+  --color-terminal-text: #d4d4d4;
+
   /* WoW class colors */
   --color-warrior: #C79C6E;
   --color-paladin: #F58CBA;
@@ -39,7 +44,30 @@
   --color-horde: #B30000;
 }
 
-:root {
+html.light {
+  color-scheme: light;
+  --color-background: #f8fafc;
+  --color-foreground: #1a1f2e;
+  --color-card: #ffffff;
+  --color-card-foreground: #1a1f2e;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1a1f2e;
+  --color-primary: #d4891a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #1a1f2e;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #3b82f6;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #d4891a;
+}
+
+html.dark {
   color-scheme: dark;
 }
 

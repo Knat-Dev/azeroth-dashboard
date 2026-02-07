@@ -1,5 +1,14 @@
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 
+/**
+ * Maps to `acore_auth.logs` (read-only, synchronize: false).
+ *
+ * MySQL indexes (managed by AzerothCore):
+ *   - PRIMARY KEY (`time`, `realm`, `type`)
+ *
+ * Implicit relations (no FK constraints in AC schema):
+ *   - logs.realm → realmlist.id
+ */
 @Entity({ name: 'logs' })
 export class Log {
   @PrimaryColumn({ type: 'int', unsigned: true })

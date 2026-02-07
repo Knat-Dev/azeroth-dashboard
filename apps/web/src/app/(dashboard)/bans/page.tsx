@@ -4,24 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/providers/toast-provider";
+import type { BanEntry, PaginatedResponse } from "@repo/shared";
 import { Ban, Search } from "lucide-react";
-
-interface BanEntry {
-  id: number;
-  accountId: number;
-  username: string;
-  reason: string;
-  bannedBy: string;
-  banDate: string;
-  unbanDate: string;
-}
-
-interface BansApiResponse {
-  data: BanEntry[];
-  total: number;
-  page: number;
-  limit: number;
-}
 
 const LIMIT = 20;
 
@@ -50,7 +34,7 @@ export default function BansPage() {
         url += `&search=${encodeURIComponent(term)}`;
       }
       api
-        .get<BansApiResponse>(url)
+        .get<PaginatedResponse<BanEntry>>(url)
         .then((res) => {
           setBans(res.data);
           setTotal(res.total);

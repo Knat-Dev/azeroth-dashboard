@@ -2,15 +2,19 @@
 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useTheme } from "@/providers/theme-provider";
 import {
   Activity,
   Ban,
   Database,
   Home,
   LogOut,
+  Monitor,
+  Moon,
   Pin,
   PinOff,
   Settings,
+  Sun,
   Terminal,
   UserCog,
   Users,
@@ -83,6 +87,41 @@ function NavSection({
             <item.icon className="h-4 w-4 shrink-0" />
             <span className={fadeText(expanded)}>{item.label}</span>
           </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const themeOptions = [
+  { value: "dark" as const, icon: Moon, label: "Dark" },
+  { value: "light" as const, icon: Sun, label: "Light" },
+  { value: "system" as const, icon: Monitor, label: "System" },
+];
+
+function ThemeToggle({ expanded }: { expanded: boolean }) {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div className="border-t border-border px-2 py-2">
+      <div className={cn(
+        "flex items-center rounded-lg",
+        expanded ? "justify-center gap-1 px-1" : "flex-col gap-1 md:flex-col",
+      )}>
+        {themeOptions.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setTheme(opt.value)}
+            title={opt.label}
+            className={cn(
+              "rounded-md p-1.5 transition-colors",
+              theme === opt.value
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            )}
+          >
+            <opt.icon className="h-3.5 w-3.5" />
+          </button>
         ))}
       </div>
     </div>
@@ -182,6 +221,9 @@ export function Sidebar({
           <NavSection label="Management" items={mgmtItems} pathname={pathname} expanded={expanded} onLinkClick={onMobileClose} />
           <NavSection label="System" items={systemItems} pathname={pathname} expanded={expanded} onLinkClick={onMobileClose} />
         </nav>
+
+        {/* Theme toggle */}
+        <ThemeToggle expanded={expanded} />
 
         {/* Bottom: User */}
         <div className="border-t border-border px-2 py-3">

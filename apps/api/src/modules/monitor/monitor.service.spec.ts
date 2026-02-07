@@ -1,5 +1,5 @@
 import { MonitorService } from './monitor.service';
-import { createMockRepository, createMockConfigService } from '../../shared/test-utils';
+import { createMockConfigService } from '../../shared/test-utils';
 
 describe('MonitorService', () => {
   let service: MonitorService;
@@ -7,7 +7,7 @@ describe('MonitorService', () => {
   let mockSoapService: any;
   let mockEventService: any;
   let mockWebhookService: any;
-  let mockCharacterRepo: ReturnType<typeof createMockRepository>;
+  let mockServerService: any;
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -34,8 +34,9 @@ describe('MonitorService', () => {
       reloadConfig: jest.fn(),
     };
 
-    mockCharacterRepo = createMockRepository();
-    mockCharacterRepo.count.mockResolvedValue(0);
+    mockServerService = {
+      getOnlineCount: jest.fn().mockResolvedValue(0),
+    };
 
     const configService = createMockConfigService({
       AUTO_RESTART_ENABLED: 'true',
@@ -52,7 +53,7 @@ describe('MonitorService', () => {
       mockEventService,
       mockWebhookService,
       configService as any,
-      mockCharacterRepo as any,
+      mockServerService as any,
     );
   });
 

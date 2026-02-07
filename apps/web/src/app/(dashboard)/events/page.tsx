@@ -3,23 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { useDebounce } from "@/hooks/use-debounce";
+import type { ServerEvent, PaginatedResponse } from "@repo/shared";
 import { Activity, Search, Clock } from "lucide-react";
-
-interface ServerEvent {
-  id: number;
-  timestamp: string;
-  container: string;
-  event_type: string;
-  details: string | null;
-  duration_ms: number | null;
-}
-
-interface EventsApiResponse {
-  data: ServerEvent[];
-  total: number;
-  page: number;
-  limit: number;
-}
 
 const LIMIT = 25;
 
@@ -91,7 +76,7 @@ export default function EventsPage() {
       let url = `/server/events?page=${p}&limit=${LIMIT}`;
       if (container) url += `&container=${encodeURIComponent(container)}`;
       api
-        .get<EventsApiResponse>(url)
+        .get<PaginatedResponse<ServerEvent>>(url)
         .then((res) => {
           setEvents(res.data);
           setTotal(res.total);

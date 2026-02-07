@@ -1,8 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { useToast } from "@/providers/toast-provider";
+import { useDashboard } from "@/hooks/use-dashboard";
 import { PlayerChart } from "@/components/dashboard/player-chart";
 import {
   Server,
@@ -13,23 +11,6 @@ import {
   Activity,
   Clock,
 } from "lucide-react";
-
-interface HealthState {
-  worldserver: { state: string; status: string };
-  authserver: { state: string; status: string };
-  soap: { connected: boolean };
-  players: { online: number };
-  lastUpdated: string;
-}
-
-interface ServerEvent {
-  id: number;
-  timestamp: string;
-  container: string;
-  event_type: string;
-  details: string | null;
-  duration_ms: number | null;
-}
 
 function formatRelativeTime(timestamp: string): string {
   const diffMs = Date.now() - new Date(timestamp).getTime();
@@ -110,52 +91,9 @@ function ConfirmDialog({
 }
 
 export default function DashboardPage() {
-  const [health, setHealth] = useState<HealthState | null>(null);
-  const [error, setError] = useState("");
-  const [restartTarget, setRestartTarget] = useState<string | null>(null);
-  const [restarting, setRestarting] = useState(false);
-  const { toast } = useToast();
-  const [events, setEvents] = useState<ServerEvent[]>([]);
-
-  const fetchHealth = useCallback(async () => {
-    try {
-      const data = await api.get<HealthState>("/server/health");
-      setHealth(data);
-      setError("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to fetch health");
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchHealth();
-    const interval = setInterval(fetchHealth, 5000);
-    return () => clearInterval(interval);
-  }, [fetchHealth]);
-
-  useEffect(() => {
-    api.get<ServerEvent[]>("/server/events?limit=10").then(setEvents).catch(() => {});
-  }, []);
-
-  async function handleRestart() {
-    if (!restartTarget) return;
-    setRestarting(true);
-    try {
-      if (restartTarget === "all") {
-        await api.post("/admin/restart/ac-worldserver");
-        await api.post("/admin/restart/ac-authserver");
-      } else {
-        await api.post(`/admin/restart/${restartTarget}`);
-      }
-      toast("success", `${restartTarget === "all" ? "All servers" : restartTarget} restarted`);
-      void fetchHealth();
-    } catch (e) {
-      toast("error", e instanceof Error ? e.message : "Restart failed");
-    } finally {
-      setRestarting(false);
-      setRestartTarget(null);
-    }
-  }
+  const {
+    health, error, restartTarget, setRestartTarget, restarting, events, handleRestart,
+  } = useDashboard();
 
   return (
     <div className="space-y-4">
@@ -163,7 +101,7 @@ export default function DashboardPage() {
         <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
       )}
 
-      {/* Row 1: Health indicators — compact inline strip */}
+      {/* Row 1: Health indicators */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
           <Server className="h-4 w-4 shrink-0 text-primary" />
@@ -201,11 +139,11 @@ export default function DashboardPage() {
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">Players</p>
           </div>
-          <p className="text-xl font-bold text-foreground">{health?.players.online ?? "—"}</p>
+          <p className="text-xl font-bold text-foreground">{health?.players.online ?? "\u2014"}</p>
         </div>
       </div>
 
-      {/* Row 2: Chart (3/4) + Quick Actions (1/4) */}
+      {/* Row 2: Chart + Quick Actions */}
       <div className="grid gap-4 lg:grid-cols-4">
         <div className="lg:col-span-3">
           <PlayerChart />
@@ -251,7 +189,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 3: Recent Events — compact */}
+      {/* Row 3: Recent Events */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">

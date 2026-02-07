@@ -1,5 +1,16 @@
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 
+/**
+ * Maps to `acore_world.item_template` (read-only, synchronize: false).
+ *
+ * MySQL indexes (managed by AzerothCore):
+ *   - PRIMARY KEY (`entry`)
+ *   - INDEX `idx_name` (`name`)
+ *   - INDEX `items_index` (`class`)
+ *
+ * Referenced by:
+ *   - item_instance.itemEntry → item_template.entry  (characters DB)
+ */
 @Entity({ name: 'item_template' })
 export class ItemTemplate {
   @PrimaryColumn({ type: 'mediumint', unsigned: true })

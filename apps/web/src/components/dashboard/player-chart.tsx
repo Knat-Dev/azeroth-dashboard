@@ -3,12 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
+import type { PlayerHistoryPoint } from "@repo/shared";
 import { api } from "@/lib/api";
-
-interface PlayerHistoryPoint {
-  timestamp: string;
-  count: number;
-}
 
 const RANGES = ["24h", "7d", "30d"] as const;
 type Range = typeof RANGES[number];

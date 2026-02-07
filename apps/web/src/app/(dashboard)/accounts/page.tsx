@@ -1,175 +1,22 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { api } from "@/lib/api";
+import { useAccounts } from "@/hooks/use-accounts";
 import { formatDate } from "@/lib/utils";
-import { useDebounce } from "@/hooks/use-debounce";
-import { useToast } from "@/providers/toast-provider";
 import { UserCog, Plus, Search } from "lucide-react";
 
-interface Account {
-  id: number;
-  username: string;
-  email: string;
-  gmLevel: number;
-  lastLogin: string;
-}
-
-interface AccountsApiResponse {
-  data: Account[];
-  total: number;
-  page: number;
-  limit: number;
-}
-
-const LIMIT = 20;
-
 export default function AccountsPage() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // Search state
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search);
-  const abortRef = useRef<AbortController | null>(null);
-
-  // Ban modal state
-  const [banningId, setBanningId] = useState<number | null>(null);
-  const [banReason, setBanReason] = useState("");
-  const [banDuration, setBanDuration] = useState("");
-  const [showBanModal, setShowBanModal] = useState(false);
-
-  // Create account modal state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createUsername, setCreateUsername] = useState("");
-  const [createPassword, setCreatePassword] = useState("");
-  const [createEmail, setCreateEmail] = useState("");
-  const [createGmLevel, setCreateGmLevel] = useState(0);
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState("");
-  const { toast } = useToast();
-
-  const fetchAccounts = useCallback(
-    (p: number, searchTerm?: string) => {
-      // Cancel any in-flight request to prevent out-of-order responses
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      setLoading(true);
-      setError("");
-      const term = searchTerm !== undefined ? searchTerm : debouncedSearch;
-      let url = `/admin/accounts?page=${p}&limit=${LIMIT}`;
-      if (term) {
-        url += `&search=${encodeURIComponent(term)}`;
-      }
-      api
-        .get<AccountsApiResponse>(url, { signal: controller.signal })
-        .then((res) => {
-          setAccounts(res.data);
-          setTotal(res.total);
-          setPage(res.page);
-          setTotalPages(Math.ceil(res.total / LIMIT));
-        })
-        .catch((e) => {
-          if (e instanceof DOMException && e.name === "AbortError") return;
-          setError(e.message);
-        })
-        .finally(() => setLoading(false));
-    },
-    [debouncedSearch],
-  );
-
-  useEffect(() => {
-    fetchAccounts(1);
-  }, [fetchAccounts]);
-
-  // When debounced search changes, reset to page 1 and fetch
-  useEffect(() => {
-    fetchAccounts(1, debouncedSearch);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
-
-  // Ban modal handlers
-  function openBanModal(accountId: number) {
-    setBanningId(accountId);
-    setBanReason("");
-    setBanDuration("");
-    setShowBanModal(true);
-  }
-
-  function closeBanModal() {
-    setShowBanModal(false);
-    setBanningId(null);
-    setBanReason("");
-    setBanDuration("");
-  }
-
-  function handleBan() {
-    if (!banningId || !banReason.trim()) return;
-    setError("");
-    api
-      .post(`/admin/accounts/${banningId}/ban`, {
-        reason: banReason,
-        duration: banDuration || undefined,
-      })
-      .then(() => {
-        closeBanModal();
-        toast("success", "Account banned");
-        fetchAccounts(page);
-      })
-      .catch((e) => toast("error", e.message));
-  }
-
-  // Create account modal handlers
-  function openCreateModal() {
-    setCreateUsername("");
-    setCreatePassword("");
-    setCreateEmail("");
-    setCreateGmLevel(0);
-    setCreateError("");
-    setShowCreateModal(true);
-  }
-
-  function closeCreateModal() {
-    setShowCreateModal(false);
-    setCreateUsername("");
-    setCreatePassword("");
-    setCreateEmail("");
-    setCreateGmLevel(0);
-    setCreateError("");
-    setCreateLoading(false);
-  }
-
-  function handleCreate() {
-    if (!createUsername.trim() || !createPassword.trim()) return;
-    setCreateLoading(true);
-    setCreateError("");
-    api
-      .post("/admin/accounts", {
-        username: createUsername,
-        password: createPassword,
-        email: createEmail || undefined,
-        gmLevel: createGmLevel,
-      })
-      .then(() => {
-        closeCreateModal();
-        toast("success", "Account created successfully");
-        fetchAccounts(1);
-      })
-      .catch((e) => {
-        setCreateError(e.message);
-        setCreateLoading(false);
-      });
-  }
+  const {
+    accounts, page, totalPages, total, loading, error, search, setSearch, fetchAccounts,
+    showBanModal, banningId, banReason, setBanReason, banDuration, setBanDuration,
+    openBanModal, closeBanModal, handleBan,
+    showCreateModal, createUsername, setCreateUsername, createPassword, setCreatePassword,
+    createEmail, setCreateEmail, createGmLevel, setCreateGmLevel, createLoading,
+    createError, openCreateModal, closeCreateModal, handleCreate,
+  } = useAccounts();
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header — shrinks */}
+      {/* Header */}
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
@@ -219,29 +66,17 @@ export default function AccountsPage() {
         </div>
       ) : (
         <>
-          {/* Table — flex-1, only tbody scrolls */}
+          {/* Table */}
           <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
             <table className="w-full min-w-[700px] text-sm">
               <thead className="shrink-0">
                 <tr className="border-b border-border bg-secondary/50">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    ID
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Username
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    GM Level
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Last Login
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Username</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">GM Level</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Last Login</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
                 </tr>
               </thead>
             </table>
@@ -253,15 +88,9 @@ export default function AccountsPage() {
                       key={account.id}
                       className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30"
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {account.id}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-foreground">
-                        {account.username}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {account.email || "-"}
-                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{account.id}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{account.username}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{account.email || "-"}</td>
                       <td className="px-4 py-3">
                         {account.gmLevel > 0 ? (
                           <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
@@ -271,9 +100,7 @@ export default function AccountsPage() {
                           <span className="text-muted-foreground">Player</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {formatDate(account.lastLogin, "Never")}
-                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{formatDate(account.lastLogin, "Never")}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => openBanModal(account.id)}
@@ -289,7 +116,7 @@ export default function AccountsPage() {
             </div>
           </div>
 
-          {/* Pagination — shrinks */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-3 flex shrink-0 items-center justify-between">
               <p className="text-sm text-muted-foreground">
@@ -325,9 +152,7 @@ export default function AccountsPage() {
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">
-                  Reason
-                </label>
+                <label className="mb-1 block text-sm font-medium text-foreground">Reason</label>
                 <input
                   type="text"
                   value={banReason}
@@ -373,9 +198,7 @@ export default function AccountsPage() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">
-              Create Account
-            </h3>
+            <h3 className="mb-4 text-lg font-semibold text-foreground">Create Account</h3>
 
             {createError && (
               <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -412,9 +235,7 @@ export default function AccountsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">
-                  Email
-                </label>
+                <label className="mb-1 block text-sm font-medium text-foreground">Email</label>
                 <input
                   type="email"
                   value={createEmail}
@@ -424,9 +245,7 @@ export default function AccountsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">
-                  GM Level
-                </label>
+                <label className="mb-1 block text-sm font-medium text-foreground">GM Level</label>
                 <select
                   value={createGmLevel}
                   onChange={(e) => setCreateGmLevel(Number(e.target.value))}
@@ -448,9 +267,7 @@ export default function AccountsPage() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={
-                  !createUsername.trim() || !createPassword.trim() || createLoading
-                }
+                disabled={!createUsername.trim() || !createPassword.trim() || createLoading}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 {createLoading ? "Creating..." : "Create"}
