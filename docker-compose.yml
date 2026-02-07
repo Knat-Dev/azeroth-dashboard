@@ -19,7 +19,7 @@ services:
       - SOAP_USER=${SOAP_USER:-admin}
       - SOAP_PASSWORD=${SOAP_PASSWORD:-admin}
       - JWT_SECRET=${JWT_SECRET:-change-me}
-      - CORS_ORIGIN=http://localhost:${DASHBOARD_PORT:-7780}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:${DASHBOARD_PORT:-7780}}
       - PORT=3001
       - AUTO_RESTART_ENABLED=${AUTO_RESTART_ENABLED:-true}
       - AUTO_RESTART_COOLDOWN=${AUTO_RESTART_COOLDOWN:-10000}
@@ -40,7 +40,7 @@ services:
       context: .
       dockerfile: docker/web.Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-7781}/api
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${API_PORT:-7781}/api}
     ports:
       - "${DASHBOARD_PORT:-7780}:3000"
     depends_on:

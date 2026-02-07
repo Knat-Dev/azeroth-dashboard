@@ -9,7 +9,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as express from 'express';
+import type { Response } from 'express';
 import { LogsService } from './logs.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -54,7 +54,7 @@ export class LogsController {
     @Param('name') name: string,
     @Query('token') token: string,
     @Query('tail') tail: string,
-    @Res() res: express.Response,
+    @Res() res: Response,
   ) {
     if (!token) {
       throw new UnauthorizedException('Token required');
