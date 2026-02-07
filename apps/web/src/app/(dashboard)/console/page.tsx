@@ -269,7 +269,7 @@ export default function ConsolePage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             Server Console
@@ -301,7 +301,7 @@ export default function ConsolePage() {
       </div>
 
       {/* Container tabs */}
-      <div className="ml-3 flex gap-1">
+      <div className="ml-3 flex gap-1 overflow-x-auto">
         {containers.map((c) => (
           <button
             key={c.name}

@@ -82,7 +82,7 @@ function ConfirmDialog({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg">
+      <div className="mx-4 w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg">
         <div className="mb-4 flex items-center gap-3">
           <div className="rounded-lg bg-yellow-500/10 p-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />

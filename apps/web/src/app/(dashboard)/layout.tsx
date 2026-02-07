@@ -20,6 +20,7 @@ export default function DashboardLayout({
     return false;
   });
   const [hovered, setHovered] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const togglePin = useCallback(() => {
     setPinned((prev) => {
@@ -55,12 +56,14 @@ export default function DashboardLayout({
         onTogglePin={togglePin}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
       />
       {/* Spacer — matches the sidebar's actual reserved width */}
-      {!pinned && <div className="w-16 shrink-0" />}
+      {!pinned && <div className="hidden md:block w-16 shrink-0" />}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <HealthBar />
-        <main className="flex-1 overflow-y-auto px-6 py-4">
+        <HealthBar onMenuClick={() => setMobileOpen(true)} />
+        <main className="flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
           {children}
         </main>
       </div>

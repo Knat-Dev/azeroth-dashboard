@@ -181,7 +181,7 @@ export default function AccountsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header — shrinks */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             Account Management
@@ -191,19 +191,19 @@ export default function AccountsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-64 rounded-lg border border-border bg-secondary py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full md:w-64 rounded-lg border border-border bg-secondary py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Search accounts..."
             />
           </div>
           <button
             onClick={openCreateModal}
-            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
           >
             <Plus className="h-4 w-4" />
             Create Account
@@ -231,8 +231,8 @@ export default function AccountsPage() {
       ) : (
         <>
           {/* Table — flex-1, only tbody scrolls */}
-          <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-card overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[700px] text-sm">
               <thead className="shrink-0">
                 <tr className="border-b border-border bg-secondary/50">
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -257,7 +257,7 @@ export default function AccountsPage() {
               </thead>
             </table>
             <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[700px] text-sm">
                 <tbody>
                   {accounts.map((account) => (
                     <tr
@@ -330,7 +330,7 @@ export default function AccountsPage() {
       {/* Ban Modal */}
       {showBanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">
               Ban Account #{banningId}
             </h3>
@@ -383,7 +383,7 @@ export default function AccountsPage() {
       {/* Create Account Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">
               Create Account
             </h3>

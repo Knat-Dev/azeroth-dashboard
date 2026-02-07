@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface HealthState {
@@ -29,7 +30,7 @@ function mapState(state: string): "running" | "stopped" | "restarting" | "unknow
   return "unknown";
 }
 
-export function HealthBar() {
+export function HealthBar({ onMenuClick }: { onMenuClick: () => void }) {
   const [health, setHealth] = useState<HealthState | null>(null);
 
   useEffect(() => {
@@ -72,7 +73,10 @@ export function HealthBar() {
   ];
 
   return (
-    <div className="flex items-center gap-4 border-b border-border bg-card px-6 py-2.5">
+    <div className="flex items-center gap-4 border-b border-border bg-card px-4 md:px-6 py-2.5">
+      <button className="md:hidden text-muted-foreground hover:text-foreground transition-colors" onClick={onMenuClick}>
+        <Menu className="h-5 w-5" />
+      </button>
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-2">
           <StatusDot state={item.state} />
