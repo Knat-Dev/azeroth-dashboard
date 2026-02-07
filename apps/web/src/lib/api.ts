@@ -1,10 +1,15 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:7781/api";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:7781/api";
 
 class ApiClient {
   private token: string | null = null;
+  private onUnauthorized: (() => void) | null = null;
 
   setToken(token: string | null) {
     this.token = token;
+  }
+
+  setOnUnauthorized(callback: (() => void) | null) {
+    this.onUnauthorized = callback;
   }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -23,6 +28,9 @@ class ApiClient {
     });
 
     if (!res.ok) {
+      if (res.status === 401 && this.onUnauthorized) {
+        this.onUnauthorized();
+      }
       const error = await res.json().catch(() => ({ message: res.statusText }));
       throw new Error(error.message ?? `API error: ${res.status}`);
     }

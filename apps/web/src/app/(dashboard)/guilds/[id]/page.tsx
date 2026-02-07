@@ -4,14 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
-
-const WOW_CLASSES: Record<number, { name: string; color: string }> = {
-  1: { name: "Warrior", color: "#C79C6E" }, 2: { name: "Paladin", color: "#F58CBA" },
-  3: { name: "Hunter", color: "#ABD473" }, 4: { name: "Rogue", color: "#FFF569" },
-  5: { name: "Priest", color: "#FFFFFF" }, 6: { name: "Death Knight", color: "#C41F3B" },
-  7: { name: "Shaman", color: "#0070DE" }, 8: { name: "Mage", color: "#69CCF0" },
-  9: { name: "Warlock", color: "#9482C9" }, 11: { name: "Druid", color: "#FF7D0A" },
-};
+import { WOW_CLASSES } from "@/lib/constants";
+import { ArrowLeft, Shield } from "lucide-react";
 
 interface GuildDetail {
   guildid: number;
@@ -21,7 +15,14 @@ interface GuildDetail {
   members: {
     guid: number;
     rank: number;
-    character: { guid: number; name: string; level: number; class: number; race: number; online: number } | null;
+    character: {
+      guid: number;
+      name: string;
+      level: number;
+      class: number;
+      race: number;
+      online: number;
+    } | null;
   }[];
 }
 
@@ -39,28 +40,80 @@ export default function GuildDetailPage() {
     }
   }, [params.id]);
 
-  if (error) return <div className="text-destructive">{error}</div>;
-  if (!guild) return <div className="text-muted-foreground">Loading...</div>;
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-6 py-4 text-sm text-destructive">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!guild) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  const onlineCount = guild.members.filter(
+    (m) => m.character?.online,
+  ).length;
 
   return (
     <div>
-      <h1 className="mb-2 text-3xl font-bold text-primary">{guild.name}</h1>
+      <Link
+        href="/guilds"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to guilds
+      </Link>
+
+      <div className="mb-6 flex items-center gap-3">
+        <div className="rounded-lg bg-primary/10 p-2">
+          <Shield className="h-6 w-6 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-primary">{guild.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            {guild.members.length} members
+            {onlineCount > 0 && (
+              <span className="ml-2 text-green-400">{onlineCount} online</span>
+            )}
+          </p>
+        </div>
+      </div>
+
       {guild.motd && (
-        <p className="mb-1 text-sm text-muted-foreground">MOTD: {guild.motd}</p>
-      )}
-      {guild.info && (
-        <p className="mb-4 text-sm text-muted-foreground">{guild.info}</p>
+        <div className="mb-4 rounded-xl border border-border bg-card p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Message of the Day
+          </p>
+          <p className="mt-1 text-sm text-foreground">{guild.motd}</p>
+        </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-border bg-card overflow-hidden">
+      {guild.info && (
+        <div className="mb-6 rounded-xl border border-border bg-card p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Guild Info
+          </p>
+          <p className="mt-1 text-sm text-foreground">{guild.info}</p>
+        </div>
+      )}
+
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-secondary">
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Level</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Class</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Rank</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+            <tr className="border-b border-border bg-secondary/50">
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Level</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Class</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Rank</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -71,7 +124,10 @@ export default function GuildDetailPage() {
                 if (!c) return null;
                 const cls = WOW_CLASSES[c.class];
                 return (
-                  <tr key={member.guid} className="border-b border-border last:border-0">
+                  <tr
+                    key={member.guid}
+                    className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30"
+                  >
                     <td className="px-4 py-3">
                       <Link
                         href={`/characters/${c.guid}`}
@@ -81,12 +137,23 @@ export default function GuildDetailPage() {
                         {c.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-foreground">{c.level}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{cls?.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{member.rank}</td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-xs font-medium text-primary">
+                        {c.level}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3" style={{ color: cls?.color }}>
+                      {cls?.name}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {member.rank}
+                    </td>
                     <td className="px-4 py-3">
                       {c.online ? (
-                        <span className="text-green-400">Online</span>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                          Online
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">Offline</span>
                       )}
@@ -97,9 +164,6 @@ export default function GuildDetailPage() {
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-sm text-muted-foreground">
-        {guild.members.length} members
-      </p>
     </div>
   );
 }

@@ -27,6 +27,11 @@ export class AdminController {
     private soapService: SoapService,
   ) {}
 
+  @Get('stats')
+  getStats() {
+    return this.adminService.getStats();
+  }
+
   @Get('accounts')
   listAccounts(
     @Query('page') page?: string,

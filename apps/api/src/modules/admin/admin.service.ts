@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Account } from '../../entities/auth/account.entity.js';
 import { AccountAccess } from '../../entities/auth/account-access.entity.js';
 import { AccountBanned } from '../../entities/auth/account-banned.entity.js';
+import { Character } from '../../entities/characters/character.entity.js';
 
 @Injectable()
 export class AdminService {
@@ -14,6 +15,8 @@ export class AdminService {
     private accountAccessRepo: Repository<AccountAccess>,
     @InjectRepository(AccountBanned, 'auth')
     private accountBannedRepo: Repository<AccountBanned>,
+    @InjectRepository(Character, 'characters')
+    private characterRepo: Repository<Character>,
   ) {}
 
   async listAccounts(page = 1, limit = 20) {
@@ -92,6 +95,40 @@ export class AdminService {
       { active: 0 },
     );
     return { message: 'Account unbanned' };
+  }
+
+  async getStats() {
+    const totalAccounts = await this.accountRepo.count();
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recentAccounts = await this.accountRepo
+      .createQueryBuilder('a')
+      .where('a.joindate > :since', { since: oneDayAgo })
+      .getCount();
+
+    const activeBans = await this.accountBannedRepo.count({
+      where: { active: 1 },
+    });
+
+    // Check if worldserver is reachable by querying online characters
+    let serverOnline = false;
+    let onlinePlayers = 0;
+    try {
+      onlinePlayers = await this.characterRepo.count({
+        where: { online: 1 },
+      });
+      serverOnline = true;
+    } catch {
+      // characters DB not reachable means server is likely offline
+    }
+
+    return {
+      serverOnline,
+      onlinePlayers,
+      totalAccounts,
+      recentAccounts,
+      activeBans,
+    };
   }
 
   async listBans() {

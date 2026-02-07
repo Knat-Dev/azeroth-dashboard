@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
+import { UserCog } from "lucide-react";
 
 interface Account {
   id: number;
@@ -78,18 +80,6 @@ export default function AccountsPage() {
       .catch((e) => setError(e.message));
   }
 
-  function formatDate(dateStr: string) {
-    if (!dateStr) return "Never";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -110,29 +100,31 @@ export default function AccountsPage() {
       )}
 
       {loading ? (
-        <div className="text-muted-foreground">Loading accounts...</div>
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
       ) : (
         <>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border bg-secondary">
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                <tr className="border-b border-border bg-secondary/50">
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     ID
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Username
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Email
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     GM Level
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Last Login
                   </th>
-                  <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Actions
                   </th>
                 </tr>
@@ -141,9 +133,9 @@ export default function AccountsPage() {
                 {accounts.map((account) => (
                   <tr
                     key={account.id}
-                    className="border-b border-border last:border-0"
+                    className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30"
                   >
-                    <td className="px-4 py-3 font-mono text-foreground">
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                       {account.id}
                     </td>
                     <td className="px-4 py-3 font-medium text-foreground">
@@ -154,7 +146,7 @@ export default function AccountsPage() {
                     </td>
                     <td className="px-4 py-3">
                       {account.gmLevel > 0 ? (
-                        <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                           GM {account.gmLevel}
                         </span>
                       ) : (
@@ -162,7 +154,7 @@ export default function AccountsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {formatDate(account.lastLogin)}
+                      {formatDate(account.lastLogin, "Never")}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
@@ -178,9 +170,10 @@ export default function AccountsPage() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-4 py-8 text-center text-muted-foreground"
+                      className="px-4 py-12 text-center"
                     >
-                      No accounts found.
+                      <UserCog className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                      <p className="text-muted-foreground">No accounts found.</p>
                     </td>
                   </tr>
                 )}
@@ -188,33 +181,35 @@ export default function AccountsPage() {
             </table>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => fetchAccounts(page - 1)}
-                disabled={page <= 1}
-                className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-secondary disabled:opacity-50 transition-colors"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => fetchAccounts(page + 1)}
-                disabled={page >= totalPages}
-                className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-secondary disabled:opacity-50 transition-colors"
-              >
-                Next
-              </button>
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => fetchAccounts(page - 1)}
+                  disabled={page <= 1}
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-secondary disabled:opacity-30 transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => fetchAccounts(page + 1)}
+                  disabled={page >= totalPages}
+                  className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-secondary disabled:opacity-30 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
 
       {showBanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">
               Ban Account #{banningId}
             </h3>
@@ -229,6 +224,7 @@ export default function AccountsPage() {
                   onChange={(e) => setBanReason(e.target.value)}
                   className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Enter ban reason"
+                  autoFocus
                 />
               </div>
               <div>
@@ -254,7 +250,7 @@ export default function AccountsPage() {
               <button
                 onClick={handleBan}
                 disabled={!banReason.trim()}
-                className="rounded-lg bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
               >
                 Confirm Ban
               </button>

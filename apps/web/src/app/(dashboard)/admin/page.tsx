@@ -10,7 +10,6 @@ import {
   Ban,
   Terminal,
   Radio,
-  FileText,
   Database,
 } from "lucide-react";
 
@@ -51,9 +50,8 @@ function StatCard({
 const quickActions = [
   { href: "/admin/accounts", label: "Manage Accounts", icon: UserCog },
   { href: "/admin/bans", label: "Manage Bans", icon: Ban },
-  { href: "/admin/console", label: "SOAP Console", icon: Terminal },
+  { href: "/admin/console", label: "Console & Logs", icon: Terminal },
   { href: "/admin/broadcast", label: "Broadcast", icon: Radio },
-  { href: "/admin/logs", label: "View Logs", icon: FileText },
   { href: "/admin/backups", label: "Backups", icon: Database },
 ];
 

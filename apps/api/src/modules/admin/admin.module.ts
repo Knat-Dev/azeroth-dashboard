@@ -14,6 +14,7 @@ import { Account } from '../../entities/auth/account.entity.js';
 import { AccountAccess } from '../../entities/auth/account-access.entity.js';
 import { AccountBanned } from '../../entities/auth/account-banned.entity.js';
 import { Autobroadcast } from '../../entities/auth/autobroadcast.entity.js';
+import { Character } from '../../entities/characters/character.entity.js';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { Autobroadcast } from '../../entities/auth/autobroadcast.entity.js';
       [Account, AccountAccess, AccountBanned, Autobroadcast],
       'auth',
     ),
+    TypeOrmModule.forFeature([Character], 'characters'),
     AuthModule,
   ],
   controllers: [

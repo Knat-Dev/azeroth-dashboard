@@ -1,11 +1,9 @@
 "use client";
 
-import { api } from "@/lib/api";
+import { api, API_URL } from "@/lib/api";
 import { getStoredToken } from "@/lib/auth";
 import Convert from "ansi-to-html";
 import { memo, useEffect, useRef, useState } from "react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:7781/api";
 
 const convert = new Convert({
   fg: "#d4d4d4",

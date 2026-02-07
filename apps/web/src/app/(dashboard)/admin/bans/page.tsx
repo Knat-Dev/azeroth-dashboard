@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
+import { Ban } from "lucide-react";
 
 interface BanEntry {
   id: number;
@@ -45,18 +47,6 @@ export default function BansPage() {
       .finally(() => setUnbanning(null));
   }
 
-  function formatDate(dateStr: string) {
-    if (!dateStr) return "N/A";
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
   function isPermanent(unbanDate: string) {
     if (!unbanDate) return true;
     const d = new Date(unbanDate);
@@ -87,28 +77,30 @@ export default function BansPage() {
       )}
 
       {loading ? (
-        <div className="text-muted-foreground">Loading bans...</div>
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-secondary">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+              <tr className="border-b border-border bg-secondary/50">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Account
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Reason
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Banned By
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Ban Date
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Unban Date
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Expires
                 </th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Actions
                 </th>
               </tr>
@@ -117,19 +109,19 @@ export default function BansPage() {
               {bans.map((ban) => (
                 <tr
                   key={ban.id}
-                  className="border-b border-border last:border-0"
+                  className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30"
                 >
                   <td className="px-4 py-3">
-                    <div>
-                      <span className="font-medium text-foreground">
-                        {ban.username}
-                      </span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        #{ban.accountId}
-                      </span>
-                    </div>
+                    <span className="font-medium text-foreground">
+                      {ban.username}
+                    </span>
+                    <span className="ml-2 font-mono text-xs text-muted-foreground">
+                      #{ban.accountId}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-foreground">{ban.reason}</td>
+                  <td className="px-4 py-3 text-foreground max-w-xs truncate">
+                    {ban.reason}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {ban.bannedBy}
                   </td>
@@ -138,7 +130,7 @@ export default function BansPage() {
                   </td>
                   <td className="px-4 py-3">
                     {isPermanent(ban.unbanDate) ? (
-                      <span className="inline-block rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                      <span className="inline-block rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
                         Permanent
                       </span>
                     ) : (
@@ -153,7 +145,7 @@ export default function BansPage() {
                       disabled={unbanning === ban.accountId}
                       className="rounded-lg bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
                     >
-                      {unbanning === ban.accountId ? "Unbanning..." : "Unban"}
+                      {unbanning === ban.accountId ? "..." : "Unban"}
                     </button>
                   </td>
                 </tr>
@@ -162,9 +154,10 @@ export default function BansPage() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-4 py-8 text-center text-muted-foreground"
+                    className="px-4 py-12 text-center"
                   >
-                    No active bans.
+                    <Ban className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                    <p className="text-muted-foreground">No active bans.</p>
                   </td>
                 </tr>
               )}

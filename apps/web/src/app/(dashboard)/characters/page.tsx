@@ -3,25 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { WOW_CLASSES, WOW_RACES } from "@/lib/constants";
 import { formatGold, formatPlaytime } from "@/lib/utils";
-
-const WOW_CLASSES: Record<number, { name: string; color: string }> = {
-  1: { name: "Warrior", color: "#C79C6E" },
-  2: { name: "Paladin", color: "#F58CBA" },
-  3: { name: "Hunter", color: "#ABD473" },
-  4: { name: "Rogue", color: "#FFF569" },
-  5: { name: "Priest", color: "#FFFFFF" },
-  6: { name: "Death Knight", color: "#C41F3B" },
-  7: { name: "Shaman", color: "#0070DE" },
-  8: { name: "Mage", color: "#69CCF0" },
-  9: { name: "Warlock", color: "#9482C9" },
-  11: { name: "Druid", color: "#FF7D0A" },
-};
-
-const WOW_RACES: Record<number, string> = {
-  1: "Human", 2: "Orc", 3: "Dwarf", 4: "Night Elf", 5: "Undead",
-  6: "Tauren", 7: "Gnome", 8: "Troll", 10: "Blood Elf", 11: "Draenei",
-};
+import { Swords } from "lucide-react";
 
 interface Character {
   guid: number;
@@ -47,16 +31,24 @@ export default function CharactersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <div className="text-muted-foreground">Loading characters...</div>;
-  }
-
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-foreground">My Characters</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">My Characters</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {loading ? "Loading..." : `${characters.length} character${characters.length !== 1 ? "s" : ""}`}
+        </p>
+      </div>
 
-      {characters.length === 0 ? (
-        <p className="text-muted-foreground">No characters found on this account.</p>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      ) : characters.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16">
+          <Swords className="mb-3 h-10 w-10 text-muted-foreground/50" />
+          <p className="text-muted-foreground">No characters found on this account.</p>
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {characters.map((char) => {
@@ -65,17 +57,17 @@ export default function CharactersPage() {
               <Link
                 key={char.guid}
                 href={`/characters/${char.guid}`}
-                className="rounded-xl border border-border bg-card p-5 hover:border-primary/50 transition-colors"
+                className="group rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-[0_0_15px_rgba(245,166,35,0.1)]"
               >
-                <div className="flex items-center justify-between mb-3">
+                <div className="mb-3 flex items-center justify-between">
                   <h3
                     className="text-lg font-bold"
                     style={{ color: cls?.color ?? "#fff" }}
                   >
                     {char.name}
                   </h3>
-                  <span className="text-sm font-mono text-primary">
-                    Lv {char.level}
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-mono font-medium text-primary">
+                    {char.level}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -87,7 +79,8 @@ export default function CharactersPage() {
                   <span>{char.totalKills} HKs</span>
                 </div>
                 {char.online === 1 && (
-                  <span className="mt-2 inline-block rounded-full bg-green-500/20 px-2 py-0.5 text-xs text-green-400">
+                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
                     Online
                   </span>
                 )}

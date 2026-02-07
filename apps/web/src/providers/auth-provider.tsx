@@ -59,9 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     api.setToken(null);
+    api.setOnUnauthorized(null);
     clearAuth();
     setUser(null);
   }, []);
+
+  useEffect(() => {
+    api.setOnUnauthorized(() => {
+      logout();
+    });
+    return () => api.setOnUnauthorized(null);
+  }, [logout]);
 
   return (
     <AuthContext value={{ user, loading, login, register, logout }}>
