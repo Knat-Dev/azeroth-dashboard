@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import type { ItemTooltipData } from '@repo/shared';
 import { Realmlist } from '../../entities/auth/realmlist.entity.js';
 import { Character } from '../../entities/characters/character.entity.js';
 import { Guild } from '../../entities/characters/guild.entity.js';
 import { GuildMember } from '../../entities/characters/guild-member.entity.js';
+import { ItemTemplate } from '../../entities/world/item-template.entity.js';
 
 @Injectable()
 export class ServerService {
@@ -17,6 +19,8 @@ export class ServerService {
     private guildRepo: Repository<Guild>,
     @InjectRepository(GuildMember, 'characters')
     private guildMemberRepo: Repository<GuildMember>,
+    @InjectRepository(ItemTemplate, 'world')
+    private itemTemplateRepo: Repository<ItemTemplate>,
   ) {}
 
   async getOnlineCount(): Promise<number> {
@@ -215,5 +219,50 @@ export class ServerService {
         count: parseInt(r.count, 10),
       })),
     };
+  }
+
+  async getItemTemplates(entries: number[]): Promise<ItemTooltipData[]> {
+    // Deduplicate and filter out zeros, cap at 50
+    const unique = [...new Set(entries.filter((e) => e > 0))].slice(0, 50);
+    if (unique.length === 0) return [];
+
+    const items = await this.itemTemplateRepo.find({
+      where: { entry: In(unique) },
+    });
+
+    return items.map((item) => {
+      const stats: { type: number; value: number }[] = [];
+      const rec = item as unknown as Record<string, number>;
+      for (let i = 1; i <= 10; i++) {
+        const type = rec[`statType${i}`] ?? 0;
+        const value = rec[`statValue${i}`] ?? 0;
+        if (type !== 0 && value !== 0) {
+          stats.push({ type, value });
+        }
+      }
+
+      return {
+        entry: item.entry,
+        name: item.name,
+        quality: item.quality,
+        itemLevel: item.itemLevel,
+        itemClass: item.class,
+        itemSubclass: item.subclass,
+        inventoryType: item.inventoryType,
+        bonding: item.bonding,
+        requiredLevel: item.requiredLevel,
+        armor: item.armor,
+        stats,
+        dmgMin: item.dmgMin1,
+        dmgMax: item.dmgMax1,
+        dmgType: item.dmgType1,
+        speed: item.delay / 1000,
+        maxDurability: item.maxDurability,
+        allowableClass: item.allowableClass,
+        allowableRace: item.allowableRace,
+        sellPrice: item.sellPrice,
+        description: item.description,
+      };
+    });
   }
 }

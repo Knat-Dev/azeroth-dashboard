@@ -3,10 +3,33 @@ import {
   WOW_RACES,
   WOW_ZONES,
   getZoneName,
+  ITEM_QUALITY_COLORS,
+  getItemQualityColor,
+  ITEM_BONDING,
+  ITEM_INVENTORY_TYPE,
+  ITEM_STAT_NAMES,
+  ITEM_CLASS_NAMES,
+  ARMOR_SUBCLASS_NAMES,
+  WEAPON_SUBCLASS_NAMES,
+  DAMAGE_TYPE_NAMES,
 } from "@repo/shared";
 
 // Re-export for use in components
-export { WOW_CLASSES, WOW_RACES, WOW_ZONES, getZoneName };
+export {
+  WOW_CLASSES,
+  WOW_RACES,
+  WOW_ZONES,
+  getZoneName,
+  ITEM_QUALITY_COLORS,
+  getItemQualityColor,
+  ITEM_BONDING,
+  ITEM_INVENTORY_TYPE,
+  ITEM_STAT_NAMES,
+  ITEM_CLASS_NAMES,
+  ARMOR_SUBCLASS_NAMES,
+  WEAPON_SUBCLASS_NAMES,
+  DAMAGE_TYPE_NAMES,
+};
 
 export function getClassName(classId: number): string {
   return WOW_CLASSES[classId]?.name ?? "Unknown";

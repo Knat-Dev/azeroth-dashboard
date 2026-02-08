@@ -204,3 +204,164 @@ export const WOW_ZONES: Record<number, string> = {
 export function getZoneName(zoneId: number): string {
   return WOW_ZONES[zoneId] ?? `Zone ${zoneId}`;
 }
+
+// ── Item constants ──
+
+export const ITEM_QUALITY_COLORS: Record<number, string> = {
+  0: '#9d9d9d', // Poor (grey)
+  1: '#ffffff', // Common (white)
+  2: '#1eff00', // Uncommon (green)
+  3: '#0070dd', // Rare (blue)
+  4: '#a335ee', // Epic (purple)
+  5: '#ff8000', // Legendary (orange)
+  6: '#e6cc80', // Artifact (light gold)
+  7: '#00ccff', // Heirloom (light blue)
+};
+
+export function getItemQualityColor(quality: number): string {
+  return ITEM_QUALITY_COLORS[quality] ?? '#ffffff';
+}
+
+export const ITEM_BONDING: Record<number, string> = {
+  1: 'Binds when picked up',
+  2: 'Binds when equipped',
+  3: 'Binds when used',
+  4: 'Quest Item',
+};
+
+export const ITEM_INVENTORY_TYPE: Record<number, string> = {
+  0: '',
+  1: 'Head',
+  2: 'Neck',
+  3: 'Shoulder',
+  4: 'Shirt',
+  5: 'Chest',
+  6: 'Waist',
+  7: 'Legs',
+  8: 'Feet',
+  9: 'Wrists',
+  10: 'Hands',
+  11: 'Finger',
+  12: 'Trinket',
+  13: 'One-Hand',
+  14: 'Shield',
+  15: 'Ranged',
+  16: 'Back',
+  17: 'Two-Hand',
+  18: 'Bag',
+  19: 'Tabard',
+  20: 'Robe',
+  21: 'Main Hand',
+  22: 'Off Hand',
+  23: 'Holdable',
+  24: 'Ammo',
+  25: 'Thrown',
+  26: 'Ranged Right',
+  28: 'Relic',
+};
+
+export const ITEM_STAT_NAMES: Record<number, string> = {
+  0: 'Mana',
+  1: 'Health',
+  3: 'Agility',
+  4: 'Strength',
+  5: 'Intellect',
+  6: 'Spirit',
+  7: 'Stamina',
+  12: 'Defense Rating',
+  13: 'Dodge Rating',
+  14: 'Parry Rating',
+  15: 'Block Rating',
+  16: 'Melee Hit Rating',
+  17: 'Ranged Hit Rating',
+  18: 'Spell Hit Rating',
+  19: 'Melee Crit Rating',
+  20: 'Ranged Crit Rating',
+  21: 'Spell Crit Rating',
+  22: 'Melee Haste Rating',
+  23: 'Ranged Haste Rating',
+  24: 'Spell Haste Rating',
+  25: 'Hit Rating',
+  26: 'Crit Rating',
+  27: 'Haste Rating',
+  28: 'Hit Rating',
+  29: 'Crit Rating',
+  30: 'Haste Rating',
+  31: 'Hit Rating',
+  32: 'Crit Rating',
+  35: 'Resilience Rating',
+  36: 'Haste Rating',
+  37: 'Expertise Rating',
+  38: 'Attack Power',
+  39: 'Ranged Attack Power',
+  40: 'Feral Attack Power',
+  41: 'Spell Healing',
+  42: 'Spell Damage',
+  43: 'Mana Regeneration',
+  44: 'Armor Penetration Rating',
+  45: 'Spell Power',
+  46: 'Health Regeneration',
+  47: 'Spell Penetration',
+  48: 'Block Value',
+};
+
+export const ITEM_CLASS_NAMES: Record<number, string> = {
+  0: 'Consumable',
+  1: 'Container',
+  2: 'Weapon',
+  3: 'Gem',
+  4: 'Armor',
+  5: 'Reagent',
+  6: 'Projectile',
+  7: 'Trade Goods',
+  9: 'Recipe',
+  11: 'Quiver',
+  12: 'Quest',
+  13: 'Key',
+  15: 'Miscellaneous',
+  16: 'Glyph',
+};
+
+export const ARMOR_SUBCLASS_NAMES: Record<number, string> = {
+  0: 'Miscellaneous',
+  1: 'Cloth',
+  2: 'Leather',
+  3: 'Mail',
+  4: 'Plate',
+  6: 'Shield',
+  7: 'Libram',
+  8: 'Idol',
+  9: 'Totem',
+  10: 'Sigil',
+};
+
+export const WEAPON_SUBCLASS_NAMES: Record<number, string> = {
+  0: 'Axe',
+  1: 'Axe',
+  2: 'Bow',
+  3: 'Gun',
+  4: 'Mace',
+  5: 'Mace',
+  6: 'Polearm',
+  7: 'Sword',
+  8: 'Sword',
+  9: 'Obsolete',
+  10: 'Staff',
+  13: 'Fist Weapon',
+  14: 'Miscellaneous',
+  15: 'Dagger',
+  16: 'Thrown',
+  18: 'Crossbow',
+  19: 'Wand',
+  20: 'Fishing Pole',
+};
+
+export const DAMAGE_TYPE_NAMES: Record<number, string> = {
+  0: '',
+  1: 'Holy',
+  2: 'Fire',
+  3: 'Nature',
+  4: 'Frost',
+  5: 'Shadow',
+  6: 'Arcane',
+};

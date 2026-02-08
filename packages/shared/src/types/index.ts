@@ -256,3 +256,31 @@ export interface AccountListItem {
   gmLevel: number;
   lastLogin: string;
 }
+
+export interface ItemStat {
+  type: number;
+  value: number;
+}
+
+export interface ItemTooltipData {
+  entry: number;
+  name: string;
+  quality: number;
+  itemLevel: number;
+  itemClass: number;
+  itemSubclass: number;
+  inventoryType: number;
+  bonding: number;
+  requiredLevel: number;
+  armor: number;
+  stats: ItemStat[];
+  dmgMin: number;
+  dmgMax: number;
+  dmgType: number;
+  speed: number;
+  maxDurability: number;
+  allowableClass: number;
+  allowableRace: number;
+  sellPrice: number;
+  description: string;
+}

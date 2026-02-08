@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Param,
   Query,
   UseGuards,
@@ -105,5 +107,13 @@ export class ServerController {
   @UseGuards(JwtAuthGuard)
   getDistribution() {
     return this.serverService.getDistribution();
+  }
+
+  @ApiOperation({ summary: 'Batch lookup item templates by entry IDs' })
+  @Post('items/batch')
+  @UseGuards(JwtAuthGuard)
+  getItemTemplates(@Body() body: { entries: number[] }) {
+    const entries = Array.isArray(body.entries) ? body.entries : [];
+    return this.serverService.getItemTemplates(entries);
   }
 }

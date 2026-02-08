@@ -10,15 +10,18 @@ import {
   getRaceName,
   getZoneName,
   getFaction,
+  getItemQualityColor,
 } from "@/lib/wow-constants";
-import type { PlayerDetail } from "@repo/shared";
+import type { PlayerDetail, ItemTooltipData } from "@repo/shared";
 import { ArrowLeft, Heart, Swords, Shield, Trophy, Clock, Coins, MapPin, Users } from "lucide-react";
+import { ItemTooltip } from "@/components/items/item-tooltip";
 
 const EQUIPMENT_SLOTS = [
   "Head", "Neck", "Shoulders", "Body", "Chest",
   "Waist", "Legs", "Feet", "Wrists", "Hands",
   "Ring 1", "Ring 2", "Trinket 1", "Trinket 2",
   "Back", "Main Hand", "Off Hand", "Ranged", "Tabard",
+  "Bag 1", "Bag 2", "Bag 3", "Bag 4",
 ];
 
 function parseEquipmentCache(cache: string | null): { entry: number; enchant: number }[] {
@@ -38,6 +41,7 @@ export default function PlayerDetailPage() {
   const [player, setPlayer] = useState<PlayerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [itemMap, setItemMap] = useState<Map<number, ItemTooltipData>>(new Map());
 
   useEffect(() => {
     const guid = params.guid;
@@ -45,7 +49,22 @@ export default function PlayerDetailPage() {
 
     api
       .get<PlayerDetail>(`/server/players/${guid}`)
-      .then(setPlayer)
+      .then((p) => {
+        setPlayer(p);
+        // Fetch item data for equipment
+        const equipment = parseEquipmentCache(p.equipmentCache);
+        const entries = equipment.map((e) => e.entry).filter((e) => e > 0);
+        if (entries.length > 0) {
+          api
+            .post<ItemTooltipData[]>("/server/items/batch", { entries })
+            .then((items) => {
+              const map = new Map<number, ItemTooltipData>();
+              for (const item of items) map.set(item.entry, item);
+              setItemMap(map);
+            })
+            .catch(() => {}); // Silently fail — items just show as fallback
+        }
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [params.guid]);
@@ -244,24 +263,35 @@ export default function PlayerDetailPage() {
             Equipment
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
-            {equipment.map((item, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
-              >
-                <span className="text-muted-foreground">{EQUIPMENT_SLOTS[i] ?? `Slot ${i}`}</span>
-                {item.entry > 0 ? (
-                  <span className="font-mono text-xs text-foreground">
-                    Item #{item.entry}
-                    {item.enchant > 0 && (
-                      <span className="ml-1 text-primary">+E{item.enchant}</span>
-                    )}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground/50">Empty</span>
-                )}
-              </div>
-            ))}
+            {equipment.map((item, i) => {
+              const itemData = itemMap.get(item.entry);
+              return (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
+                >
+                  <span className="text-muted-foreground">{EQUIPMENT_SLOTS[i] ?? `Slot ${i}`}</span>
+                  {item.entry > 0 ? (
+                    itemData ? (
+                      <ItemTooltip item={itemData}>
+                        <span
+                          className="text-xs font-medium"
+                          style={{ color: getItemQualityColor(itemData.quality) }}
+                        >
+                          {itemData.name}
+                        </span>
+                      </ItemTooltip>
+                    ) : (
+                      <span className="font-mono text-xs text-foreground">
+                        Item #{item.entry}
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-muted-foreground/50">Empty</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
