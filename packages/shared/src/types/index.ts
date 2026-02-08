@@ -284,6 +284,7 @@ export interface ItemTooltipData {
   allowableRace: number;
   sellPrice: number;
   description: string;
+  spellEffects: { trigger: number; description: string }[];
 }
 
 export interface EquippedItemSlot {

@@ -12,6 +12,7 @@ const SEED_FILES = [
   { table: 'scalingstatvalues_dbc', file: 'scalingstatvalues.sql' },
   { table: 'spellitemenchantment_dbc', file: 'spellitemenchantment.sql' },
   { table: 'randproppoints_dbc', file: 'randproppoints.sql' },
+  { table: 'item_spell_text', file: 'item_spell_text.sql' },
 ];
 
 @Injectable()
@@ -29,10 +30,18 @@ export class DbcSeedService implements OnModuleInit {
 
     for (const { table, file } of SEED_FILES) {
       try {
-        const [row] = await ds.query(
-          `SELECT COUNT(*) as cnt FROM \`${table}\``,
-        );
-        const count = parseInt(row?.cnt ?? '0', 10);
+        // Check if table exists and has data
+        let count = 0;
+        try {
+          const [row] = await ds.query(
+            `SELECT COUNT(*) as cnt FROM \`${table}\``,
+          );
+          count = parseInt(row?.cnt ?? '0', 10);
+        } catch {
+          // Table doesn't exist yet — seed file will create it
+          count = 0;
+        }
+
         if (count > 0) {
           this.logger.log(`${table}: ${count} rows (already seeded)`);
           continue;
@@ -47,7 +56,14 @@ export class DbcSeedService implements OnModuleInit {
         }
 
         const sql = readFileSync(seedPath, 'utf8');
-        await ds.query(sql);
+        // Split on statement boundaries for multi-statement seeds
+        const statements = sql
+          .split(/;\s*\n/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        for (const stmt of statements) {
+          await ds.query(stmt);
+        }
         this.logger.log(`Seeded ${table} from ${seedPath}`);
       } catch (err) {
         this.logger.error(

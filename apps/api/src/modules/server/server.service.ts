@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import type { ItemTooltipData, EquippedItemSlot } from '@repo/shared';
 import { Realmlist } from '../../entities/auth/realmlist.entity.js';
 import { Character } from '../../entities/characters/character.entity.js';
@@ -343,7 +343,21 @@ export class ServerService {
       ssvRow = await this.ssvRepo.findOne({ where: { charlevel: level } });
     }
 
-    // 6. Build result for all 23 slots
+    // 6. Collect spell IDs from templates and batch-fetch descriptions
+    const allSpellIds = new Set<number>();
+    for (const t of templates) {
+      const rec = t as unknown as Record<string, number>;
+      for (let i = 1; i <= 5; i++) {
+        const spellId = rec[`spellId${i}`] ?? 0;
+        if (spellId > 0) allSpellIds.add(spellId);
+      }
+    }
+    const spellTextMap = await this.batchFetchSpellText(
+      [...allSpellIds],
+      this.itemTemplateRepo.manager.connection,
+    );
+
+    // 7. Build result for all 23 slots
     const result: EquippedItemSlot[] = [];
     for (let slot = 0; slot < TOTAL_EQUIPMENT_SLOTS; slot++) {
       const itemGuid = slotToItemGuid.get(slot);
@@ -468,6 +482,20 @@ export class ServerService {
         ? `${template.name} ${suffixName}`
         : template.name;
 
+      // Resolve spell effects (Equip:/Use:/Chance on hit: lines)
+      const spellEffects: { trigger: number; description: string }[] = [];
+      const tmplRec = template as unknown as Record<string, number>;
+      for (let i = 1; i <= 5; i++) {
+        const spellId = tmplRec[`spellId${i}`] ?? 0;
+        const trigger = tmplRec[`spellTrigger${i}`] ?? 0;
+        if (spellId > 0) {
+          const desc = spellTextMap.get(spellId);
+          if (desc) {
+            spellEffects.push({ trigger, description: desc });
+          }
+        }
+      }
+
       result.push({
         slot,
         item: {
@@ -492,6 +520,7 @@ export class ServerService {
           allowableRace: template.allowableRace,
           sellPrice: template.sellPrice,
           description: template.description,
+          spellEffects,
         },
       });
     }
@@ -530,6 +559,7 @@ export class ServerService {
       allowableRace: item.allowableRace,
       sellPrice: item.sellPrice,
       description: item.description,
+      spellEffects: [],
     }));
   }
 
@@ -675,6 +705,23 @@ export class ServerService {
         where: { ID: In(itemLevels) },
       });
       return new Map(rows.map((r) => [r.ID, r]));
+    } catch {
+      return new Map();
+    }
+  }
+
+  private async batchFetchSpellText(
+    spellIds: number[],
+    ds: DataSource,
+  ): Promise<Map<number, string>> {
+    if (spellIds.length === 0) return new Map();
+    try {
+      const placeholders = spellIds.map(() => '?').join(',');
+      const rows: { ID: number; Description: string }[] = await ds.query(
+        `SELECT ID, Description FROM item_spell_text WHERE ID IN (${placeholders})`,
+        spellIds,
+      );
+      return new Map(rows.map((r) => [r.ID, r.Description]));
     } catch {
       return new Map();
     }

@@ -305,6 +305,48 @@ export const ITEM_STAT_NAMES: Record<number, string> = {
   48: 'Block Value',
 };
 
+/** Primary attributes displayed as white "+X Stat" lines in tooltips */
+export const PRIMARY_STAT_TYPES = new Set([0, 1, 3, 4, 5, 6, 7]);
+
+/** Equip effect text for green "Equip:" tooltip lines (WoW-style phrasing) */
+export const EQUIP_STAT_TEXT: Record<number, string> = {
+  12: 'Increases defense rating by',
+  13: 'Increases your dodge rating by',
+  14: 'Increases your parry rating by',
+  15: 'Increases your shield block rating by',
+  16: 'Improves melee hit rating by',
+  17: 'Improves ranged hit rating by',
+  18: 'Improves spell hit rating by',
+  19: 'Improves melee critical strike rating by',
+  20: 'Improves ranged critical strike rating by',
+  21: 'Improves spell critical strike rating by',
+  22: 'Improves melee haste rating by',
+  23: 'Improves ranged haste rating by',
+  24: 'Improves spell haste rating by',
+  25: 'Improves hit rating by',
+  26: 'Improves critical strike rating by',
+  27: 'Improves haste rating by',
+  28: 'Improves hit rating by',
+  29: 'Improves critical strike rating by',
+  30: 'Improves haste rating by',
+  31: 'Improves hit rating by',
+  32: 'Improves critical strike rating by',
+  35: 'Improves your resilience rating by',
+  36: 'Improves haste rating by',
+  37: 'Increases your expertise rating by',
+  38: 'Increases attack power by',
+  39: 'Increases ranged attack power by',
+  40: 'Increases attack power in feral forms by',
+  41: 'Increases healing done by up to',
+  42: 'Increases damage done by up to',
+  43: 'Restores',
+  44: 'Increases your armor penetration rating by',
+  45: 'Increases spell power by',
+  46: 'Restores',
+  47: 'Increases spell penetration by',
+  48: 'Increases the block value of your shield by',
+};
+
 export const ITEM_CLASS_NAMES: Record<number, string> = {
   0: 'Consumable',
   1: 'Container',

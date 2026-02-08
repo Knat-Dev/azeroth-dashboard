@@ -122,4 +122,26 @@ export class ItemTemplate {
 
   @Column({ type: 'varchar', length: 255, default: '' })
   description!: string;
+
+  // Spell effects (up to 5 spells per item)
+  @Column({ type: 'mediumint', name: 'spellid_1', default: 0 })
+  spellId1!: number;
+  @Column({ type: 'tinyint', unsigned: true, name: 'spelltrigger_1', default: 0 })
+  spellTrigger1!: number;
+  @Column({ type: 'mediumint', name: 'spellid_2', default: 0 })
+  spellId2!: number;
+  @Column({ type: 'tinyint', unsigned: true, name: 'spelltrigger_2', default: 0 })
+  spellTrigger2!: number;
+  @Column({ type: 'mediumint', name: 'spellid_3', default: 0 })
+  spellId3!: number;
+  @Column({ type: 'tinyint', unsigned: true, name: 'spelltrigger_3', default: 0 })
+  spellTrigger3!: number;
+  @Column({ type: 'mediumint', name: 'spellid_4', default: 0 })
+  spellId4!: number;
+  @Column({ type: 'tinyint', unsigned: true, name: 'spelltrigger_4', default: 0 })
+  spellTrigger4!: number;
+  @Column({ type: 'mediumint', name: 'spellid_5', default: 0 })
+  spellId5!: number;
+  @Column({ type: 'tinyint', unsigned: true, name: 'spelltrigger_5', default: 0 })
+  spellTrigger5!: number;
 }

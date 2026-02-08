@@ -18,6 +18,8 @@ import {
   ITEM_BONDING,
   ITEM_INVENTORY_TYPE,
   ITEM_STAT_NAMES,
+  PRIMARY_STAT_TYPES,
+  EQUIP_STAT_TEXT,
   ARMOR_SUBCLASS_NAMES,
   WEAPON_SUBCLASS_NAMES,
   DAMAGE_TYPE_NAMES,
@@ -77,6 +79,10 @@ export function ItemTooltip({
       : null;
 
   const dmgTypeName = item.dmgType > 0 ? DAMAGE_TYPE_NAMES[item.dmgType] : "";
+
+  // Split stats into primary (white "+X Stat") and equip (green "Equip:" lines)
+  const primaryStats = item.stats.filter((s) => PRIMARY_STAT_TYPES.has(s.type));
+  const equipStats = item.stats.filter((s) => !PRIMARY_STAT_TYPES.has(s.type));
 
   return (
     <>
@@ -139,8 +145,8 @@ export function ItemTooltip({
               <div className="text-xs text-white">{item.armor} Armor</div>
             )}
 
-            {/* Stats */}
-            {item.stats.map((stat, i) => (
+            {/* Primary stats (white) */}
+            {primaryStats.map((stat, i) => (
               <div key={i} className="text-xs text-white">
                 +{stat.value} {ITEM_STAT_NAMES[stat.type] ?? `Stat #${stat.type}`}
               </div>
@@ -159,6 +165,49 @@ export function ItemTooltip({
                 Requires Level {item.requiredLevel}
               </div>
             )}
+
+            {/* Equip effects (green) */}
+            {equipStats.map((stat, i) => {
+              const text = EQUIP_STAT_TEXT[stat.type];
+              const name = ITEM_STAT_NAMES[stat.type] ?? `Stat #${stat.type}`;
+              // Special phrasing for mana/health regen (per 5 sec)
+              if (stat.type === 43) {
+                return (
+                  <div key={`eq-${i}`} className="text-xs text-[#1eff00]">
+                    Equip: Restores {stat.value} mana per 5 sec.
+                  </div>
+                );
+              }
+              if (stat.type === 46) {
+                return (
+                  <div key={`eq-${i}`} className="text-xs text-[#1eff00]">
+                    Equip: Restores {stat.value} health per 5 sec.
+                  </div>
+                );
+              }
+              return (
+                <div key={`eq-${i}`} className="text-xs text-[#1eff00]">
+                  Equip: {text ? `${text} ${stat.value}` : `Increases ${name.toLowerCase()} by ${stat.value}`}.
+                </div>
+              );
+            })}
+
+            {/* Spell effects (Equip:/Use:/Chance on hit:) */}
+            {item.spellEffects?.map((spell, i) => {
+              const prefix =
+                spell.trigger === 1
+                  ? "Equip: "
+                  : spell.trigger === 0
+                    ? "Use: "
+                    : spell.trigger === 2
+                      ? "Chance on hit: "
+                      : "Equip: ";
+              return (
+                <div key={`spell-${i}`} className="text-xs text-[#1eff00]">
+                  {prefix}{spell.description}
+                </div>
+              );
+            })}
 
             {/* Description / flavor text */}
             {item.description && (
