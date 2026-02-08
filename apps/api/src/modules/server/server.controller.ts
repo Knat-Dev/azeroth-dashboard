@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ServerService } from './server.service.js';
 import { MonitorService } from '../monitor/monitor.service.js';
@@ -57,10 +64,7 @@ export class ServerController {
         container,
       );
     }
-    return this.eventService.getEvents(
-      parseInt(limit ?? '50', 10),
-      container,
-    );
+    return this.eventService.getEvents(parseInt(limit ?? '50', 10), container);
   }
 
   @ApiOperation({ summary: 'Get player count history' })
@@ -68,7 +72,7 @@ export class ServerController {
   @UseGuards(JwtAuthGuard)
   getPlayerHistory(@Query('range') range?: string) {
     const validRanges = ['24h', '7d', '30d'] as const;
-    const r = validRanges.includes(range as typeof validRanges[number])
+    const r = validRanges.includes(range as (typeof validRanges)[number])
       ? (range as '24h' | '7d' | '30d')
       : '24h';
     return this.eventService.getPlayerHistory(r);

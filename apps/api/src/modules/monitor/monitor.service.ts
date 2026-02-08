@@ -86,16 +86,26 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     // Load defaults from env
     this.autoRestartEnabled =
       (configService.get('AUTO_RESTART_ENABLED') ?? 'true') === 'true';
-    this.cooldownMs =
-      parseInt(configService.get('AUTO_RESTART_COOLDOWN') ?? '10000', 10);
-    this.maxRetries =
-      parseInt(configService.get('AUTO_RESTART_MAX_RETRIES') ?? '3', 10);
-    this.retryIntervalMs =
-      parseInt(configService.get('AUTO_RESTART_RETRY_INTERVAL') ?? '15000', 10);
-    this.crashLoopThreshold =
-      parseInt(configService.get('CRASH_LOOP_THRESHOLD') ?? '3', 10);
-    this.crashLoopWindowMs =
-      parseInt(configService.get('CRASH_LOOP_WINDOW') ?? '300000', 10); // 5 min
+    this.cooldownMs = parseInt(
+      configService.get('AUTO_RESTART_COOLDOWN') ?? '10000',
+      10,
+    );
+    this.maxRetries = parseInt(
+      configService.get('AUTO_RESTART_MAX_RETRIES') ?? '3',
+      10,
+    );
+    this.retryIntervalMs = parseInt(
+      configService.get('AUTO_RESTART_RETRY_INTERVAL') ?? '15000',
+      10,
+    );
+    this.crashLoopThreshold = parseInt(
+      configService.get('CRASH_LOOP_THRESHOLD') ?? '3',
+      10,
+    );
+    this.crashLoopWindowMs = parseInt(
+      configService.get('CRASH_LOOP_WINDOW') ?? '300000',
+      10,
+    ); // 5 min
   }
 
   onModuleInit() {
@@ -108,9 +118,7 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
 
     // Record player count every 5 minutes
     this.playerRecordHandle = setInterval(() => {
-      this.eventService.recordPlayerCount(
-        this.cachedHealth.players.online,
-      );
+      this.eventService.recordPlayerCount(this.cachedHealth.players.online);
     }, PLAYER_RECORD_INTERVAL_MS);
 
     // Prune old data daily
@@ -149,16 +157,10 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
       this.maxRetries = parseInt(settings['autoRestartMaxRetries'], 10);
     }
     if (settings['autoRestartRetryInterval']) {
-      this.retryIntervalMs = parseInt(
-        settings['autoRestartRetryInterval'],
-        10,
-      );
+      this.retryIntervalMs = parseInt(settings['autoRestartRetryInterval'], 10);
     }
     if (settings['crashLoopThreshold']) {
-      this.crashLoopThreshold = parseInt(
-        settings['crashLoopThreshold'],
-        10,
-      );
+      this.crashLoopThreshold = parseInt(settings['crashLoopThreshold'], 10);
     }
     if (settings['crashLoopWindow']) {
       this.crashLoopWindowMs = parseInt(settings['crashLoopWindow'], 10);
@@ -182,13 +184,12 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
 
   private async poll(): Promise<void> {
     try {
-      const [worldState, authState, soapOk, onlineCount] =
-        await Promise.all([
-          this.dockerService.getContainerState('ac-worldserver'),
-          this.dockerService.getContainerState('ac-authserver'),
-          this.checkSoap(),
-          this.serverService.getOnlineCount(),
-        ]);
+      const [worldState, authState, soapOk, onlineCount] = await Promise.all([
+        this.dockerService.getContainerState('ac-worldserver'),
+        this.dockerService.getContainerState('ac-authserver'),
+        this.checkSoap(),
+        this.serverService.getOnlineCount(),
+      ]);
 
       // Process state changes
       this.processStateChange('ac-worldserver', worldState.state);
@@ -247,12 +248,13 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`${container}: ${prev} -> ${currentState}`);
 
     // running -> exited/dead = crash
-    if (
-      prev === 'running' &&
-      ['exited', 'dead'].includes(currentState)
-    ) {
+    if (prev === 'running' && ['exited', 'dead'].includes(currentState)) {
       tracker.crashedAt = Date.now();
-      this.eventService.logEvent(container, 'crash', `State: ${prev} -> ${currentState}`);
+      this.eventService.logEvent(
+        container,
+        'crash',
+        `State: ${prev} -> ${currentState}`,
+      );
       this.webhookService.sendNotification(
         'crash',
         'high',
@@ -272,10 +274,7 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     }
 
     // exited/dead -> running = recovery
-    if (
-      ['exited', 'dead'].includes(prev) &&
-      currentState === 'running'
-    ) {
+    if (['exited', 'dead'].includes(prev) && currentState === 'running') {
       const downtime = tracker.crashedAt
         ? Date.now() - tracker.crashedAt
         : undefined;
@@ -342,7 +341,9 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
 
         const state = await this.dockerService.getContainerState(container);
         if (state.state === 'running') {
-          this.logger.log(`Auto-restart: ${container} recovered on attempt ${attempt}`);
+          this.logger.log(
+            `Auto-restart: ${container} recovered on attempt ${attempt}`,
+          );
           this.eventService.logEvent(
             container,
             'restart_success',
@@ -455,19 +456,14 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
   private async checkSoap(): Promise<boolean> {
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('SOAP timeout')),
-          SOAP_TIMEOUT_MS,
-        ),
+        setTimeout(() => reject(new Error('SOAP timeout')), SOAP_TIMEOUT_MS),
       );
       const soapPromise = this.soapService.executeCommand('.server info');
       const result = await Promise.race([soapPromise, timeoutPromise]);
       if (result.success && result.message) {
         // Parse uptime from .server info response
         // e.g. "AzerothCore ... Uptime: 1 Day(s) 3 Hour(s) 25 Minute(s) 10 Second(s)"
-        const uptimeMatch = result.message.match(
-          /Uptime:\s*(.+?)(?:\.|$)/i,
-        );
+        const uptimeMatch = result.message.match(/Uptime:\s*(.+?)(?:\.|$)/i);
         if (uptimeMatch) {
           this.lastSoapUptime = uptimeMatch[1].trim();
         }

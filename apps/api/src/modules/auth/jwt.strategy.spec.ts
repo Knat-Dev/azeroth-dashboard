@@ -5,7 +5,9 @@ describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
 
   beforeEach(() => {
-    const configService = createMockConfigService({ 'jwt.secret': 'test-secret' });
+    const configService = createMockConfigService({
+      'jwt.secret': 'test-secret',
+    });
     strategy = new JwtStrategy(configService as any);
   });
 

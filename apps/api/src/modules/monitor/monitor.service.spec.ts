@@ -13,12 +13,20 @@ describe('MonitorService', () => {
     jest.useFakeTimers();
 
     mockDockerService = {
-      getContainerState: jest.fn().mockResolvedValue({ state: 'running', status: 'Up 1 hour', startedAt: null }),
-      restartContainer: jest.fn().mockResolvedValue({ state: 'running', status: 'Up', startedAt: null }),
+      getContainerState: jest.fn().mockResolvedValue({
+        state: 'running',
+        status: 'Up 1 hour',
+        startedAt: null,
+      }),
+      restartContainer: jest
+        .fn()
+        .mockResolvedValue({ state: 'running', status: 'Up', startedAt: null }),
     };
 
     mockSoapService = {
-      executeCommand: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
+      executeCommand: jest
+        .fn()
+        .mockResolvedValue({ success: true, message: 'ok' }),
     };
 
     mockEventService = {
@@ -53,7 +61,7 @@ describe('MonitorService', () => {
       mockEventService,
       mockWebhookService,
       configService as any,
-      mockServerService as any,
+      mockServerService,
     );
   });
 
@@ -176,15 +184,21 @@ describe('MonitorService', () => {
       (service as any).autoRestart(container);
 
     it('should successfully restart on first attempt', async () => {
-      mockDockerService.restartContainer.mockResolvedValue({ state: 'running' });
-      mockDockerService.getContainerState.mockResolvedValue({ state: 'running' });
+      mockDockerService.restartContainer.mockResolvedValue({
+        state: 'running',
+      });
+      mockDockerService.getContainerState.mockResolvedValue({
+        state: 'running',
+      });
 
       const promise = autoRestart('ac-worldserver');
       // Advance past cooldown and settle wait
       await jest.advanceTimersByTimeAsync(5000);
       await promise;
 
-      expect(mockDockerService.restartContainer).toHaveBeenCalledWith('ac-worldserver');
+      expect(mockDockerService.restartContainer).toHaveBeenCalledWith(
+        'ac-worldserver',
+      );
       expect(mockEventService.logEvent).toHaveBeenCalledWith(
         'ac-worldserver',
         'restart_success',
@@ -210,7 +224,9 @@ describe('MonitorService', () => {
 
     it('should retry up to maxRetries', async () => {
       mockDockerService.restartContainer.mockResolvedValue({ state: 'exited' });
-      mockDockerService.getContainerState.mockResolvedValue({ state: 'exited' });
+      mockDockerService.getContainerState.mockResolvedValue({
+        state: 'exited',
+      });
 
       const promise = autoRestart('ac-worldserver');
       await jest.advanceTimersByTimeAsync(30000);
@@ -221,7 +237,9 @@ describe('MonitorService', () => {
 
     it('should send restart_failed webhook when all retries exhausted', async () => {
       mockDockerService.restartContainer.mockResolvedValue({ state: 'exited' });
-      mockDockerService.getContainerState.mockResolvedValue({ state: 'exited' });
+      mockDockerService.getContainerState.mockResolvedValue({
+        state: 'exited',
+      });
 
       const promise = autoRestart('ac-worldserver');
       await jest.advanceTimersByTimeAsync(30000);
@@ -247,7 +265,9 @@ describe('MonitorService', () => {
 
       checkCrashLoop('ac-worldserver');
 
-      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(true);
+      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(
+        true,
+      );
       expect(mockWebhookService.sendNotification).toHaveBeenCalledWith(
         'crash_loop',
         'critical',
@@ -263,7 +283,9 @@ describe('MonitorService', () => {
 
       checkCrashLoop('ac-worldserver');
 
-      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(false);
+      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(
+        false,
+      );
     });
 
     it('should activate crash loop when restart count >= threshold', () => {
@@ -273,7 +295,9 @@ describe('MonitorService', () => {
 
       checkCrashLoop('ac-worldserver');
 
-      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(true);
+      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(
+        true,
+      );
     });
 
     it('should not activate when both counts below threshold', () => {
@@ -283,7 +307,9 @@ describe('MonitorService', () => {
 
       checkCrashLoop('ac-worldserver');
 
-      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(false);
+      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(
+        false,
+      );
     });
   });
 
@@ -347,7 +373,9 @@ describe('MonitorService', () => {
 
       service.clearCrashLoop('ac-worldserver');
 
-      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(false);
+      expect((service as any).trackers['ac-worldserver'].crashLoopActive).toBe(
+        false,
+      );
       expect((service as any).trackers['ac-worldserver'].crashedAt).toBeNull();
       expect(mockEventService.logEvent).toHaveBeenCalledWith(
         'ac-worldserver',

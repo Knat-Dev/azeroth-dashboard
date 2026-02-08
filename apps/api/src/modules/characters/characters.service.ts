@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Character } from '../../entities/characters/character.entity.js';
@@ -36,7 +40,11 @@ export class CharactersService {
     return character;
   }
 
-  async getCharacterInventory(guid: number, accountId: number, isAdmin: boolean) {
+  async getCharacterInventory(
+    guid: number,
+    accountId: number,
+    isAdmin: boolean,
+  ) {
     const character = await this.characterRepo.findOne({ where: { guid } });
     if (!character) throw new NotFoundException('Character not found');
     if (character.account !== accountId && !isAdmin) {

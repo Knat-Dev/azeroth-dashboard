@@ -50,7 +50,12 @@ describe('DockerService', () => {
       const frame1Payload = Buffer.from('hello');
       const frame2Header = Buffer.from([1, 0, 0, 0, 0, 0, 0, 6]);
       const frame2Payload = Buffer.from(' world');
-      const buf = Buffer.concat([frame1Header, frame1Payload, frame2Header, frame2Payload]);
+      const buf = Buffer.concat([
+        frame1Header,
+        frame1Payload,
+        frame2Header,
+        frame2Payload,
+      ]);
 
       expect(service.stripMultiplexedHeaders(buf)).toBe('hello world');
     });
@@ -74,7 +79,12 @@ describe('DockerService', () => {
       const frame1Payload = Buffer.from('hello');
       const frame2Header = Buffer.from([1, 0, 0, 0, 0, 0, 0, 20]); // claims 20 bytes but only 3 available
       const partial = Buffer.from('abc');
-      const buf = Buffer.concat([frame1Header, frame1Payload, frame2Header, partial]);
+      const buf = Buffer.concat([
+        frame1Header,
+        frame1Payload,
+        frame2Header,
+        partial,
+      ]);
 
       // Should extract frame1 and stop at truncated frame2
       expect(service.stripMultiplexedHeaders(buf)).toBe('hello');
@@ -93,11 +103,33 @@ describe('DockerService', () => {
           statusCode: 200,
           on: jest.fn((event: string, handler: any) => {
             if (event === 'data') {
-              handler(Buffer.from(JSON.stringify([
-                { Id: '1', Names: ['/ac-worldserver'], State: 'running', Status: 'Up', Image: 'test' },
-                { Id: '2', Names: ['/ac-authserver'], State: 'running', Status: 'Up', Image: 'test' },
-                { Id: '3', Names: ['/evil-container'], State: 'running', Status: 'Up', Image: 'test' },
-              ])));
+              handler(
+                Buffer.from(
+                  JSON.stringify([
+                    {
+                      Id: '1',
+                      Names: ['/ac-worldserver'],
+                      State: 'running',
+                      Status: 'Up',
+                      Image: 'test',
+                    },
+                    {
+                      Id: '2',
+                      Names: ['/ac-authserver'],
+                      State: 'running',
+                      Status: 'Up',
+                      Image: 'test',
+                    },
+                    {
+                      Id: '3',
+                      Names: ['/evil-container'],
+                      State: 'running',
+                      Status: 'Up',
+                      Image: 'test',
+                    },
+                  ]),
+                ),
+              );
             }
             if (event === 'end') {
               handler();
@@ -111,15 +143,18 @@ describe('DockerService', () => {
       const result = await service.listContainers();
 
       expect(result).toHaveLength(2);
-      expect(result.map(c => c.name)).toEqual(['ac-worldserver', 'ac-authserver']);
+      expect(result.map((c) => c.name)).toEqual([
+        'ac-worldserver',
+        'ac-authserver',
+      ]);
     });
   });
 
   describe('inspectContainer', () => {
     it('should reject non-allowed container', async () => {
-      await expect(
-        service.inspectContainer('evil-container'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.inspectContainer('evil-container')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should return container details for allowed container', async () => {
@@ -130,11 +165,18 @@ describe('DockerService', () => {
           statusCode: 200,
           on: jest.fn((event: string, handler: any) => {
             if (event === 'data') {
-              handler(Buffer.from(JSON.stringify({
-                Config: { Tty: true },
-                State: { Status: 'running', StartedAt: '2024-01-01T00:00:00Z' },
-                Status: 'Up 1 hour',
-              })));
+              handler(
+                Buffer.from(
+                  JSON.stringify({
+                    Config: { Tty: true },
+                    State: {
+                      Status: 'running',
+                      StartedAt: '2024-01-01T00:00:00Z',
+                    },
+                    Status: 'Up 1 hour',
+                  }),
+                ),
+              );
             }
             if (event === 'end') handler();
           }),
@@ -153,9 +195,9 @@ describe('DockerService', () => {
 
   describe('restartContainer', () => {
     it('should reject non-allowed container', async () => {
-      await expect(
-        service.restartContainer('evil-container'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.restartContainer('evil-container')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

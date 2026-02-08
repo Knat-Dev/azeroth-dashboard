@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Account } from '../../entities/auth/account.entity.js';
@@ -74,10 +78,9 @@ export class AdminService {
     const qb = this.accountRepo.createQueryBuilder('a');
 
     if (search) {
-      qb.where(
-        'UPPER(a.username) LIKE :search OR a.email LIKE :search',
-        { search: `%${search.toUpperCase()}%` },
-      );
+      qb.where('UPPER(a.username) LIKE :search OR a.email LIKE :search', {
+        search: `%${search.toUpperCase()}%`,
+      });
     }
 
     qb.orderBy('a.id', 'ASC')
@@ -95,9 +98,7 @@ export class AdminService {
             .getMany()
         : [];
 
-    const accessMap = new Map(
-      accessRecords.map((a) => [a.id, a.gmlevel]),
-    );
+    const accessMap = new Map(accessRecords.map((a) => [a.id, a.gmlevel]));
 
     return {
       data: accounts.map((a) => ({
@@ -248,7 +249,8 @@ export class AdminService {
         reason: b.banreason,
         bannedBy: b.bannedby,
         banDate: new Date(b.bandate * 1000).toISOString(),
-        unbanDate: b.unbandate === 0 ? null : new Date(b.unbandate * 1000).toISOString(),
+        unbanDate:
+          b.unbandate === 0 ? null : new Date(b.unbandate * 1000).toISOString(),
       })),
       total,
       page,
@@ -288,7 +290,10 @@ export class AdminService {
     const account = await this.accountRepo.findOneBy({ id: accountId });
     if (!account) throw new NotFoundException('Account not found');
 
-    const { salt, verifier } = makeRegistrationData(account.username, newPassword);
+    const { salt, verifier } = makeRegistrationData(
+      account.username,
+      newPassword,
+    );
     await this.accountRepo.update(accountId, { salt, verifier });
     return { message: 'Password reset successfully' };
   }

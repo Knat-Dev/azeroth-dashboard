@@ -26,8 +26,7 @@ export class WebhookService {
     @Inject(forwardRef(() => EventService))
     private eventService: EventService,
   ) {
-    this.discordUrl =
-      configService.get<string>('DISCORD_WEBHOOK_URL') || null;
+    this.discordUrl = configService.get<string>('DISCORD_WEBHOOK_URL') || null;
     const events =
       configService.get<string>('WEBHOOK_EVENTS') ||
       'crash,restart_failed,crash_loop,backup_success,backup_failed';
@@ -41,9 +40,7 @@ export class WebhookService {
 
     const events = this.eventService.getSetting('webhookEvents');
     if (events !== null) {
-      this.enabledEvents = new Set(
-        events.split(',').map((e) => e.trim()),
-      );
+      this.enabledEvents = new Set(events.split(',').map((e) => e.trim()));
     }
   }
 
@@ -73,7 +70,12 @@ export class WebhookService {
       return { success: false, message: 'No webhook URL configured' };
     }
     try {
-      await this.send('test', 'info', 'Test Notification', 'This is a test notification from Azeroth Dashboard.');
+      await this.send(
+        'test',
+        'info',
+        'Test Notification',
+        'This is a test notification from Azeroth Dashboard.',
+      );
       return { success: true, message: 'Test notification sent' };
     } catch (err) {
       return {

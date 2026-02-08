@@ -28,7 +28,12 @@ export class ItemTemplate {
   @Column({ type: 'tinyint', unsigned: true, name: 'Quality', default: 0 })
   quality!: number;
 
-  @Column({ type: 'tinyint', unsigned: true, name: 'InventoryType', default: 0 })
+  @Column({
+    type: 'tinyint',
+    unsigned: true,
+    name: 'InventoryType',
+    default: 0,
+  })
   inventoryType!: number;
 
   @Column({ type: 'mediumint', name: 'ItemLevel', default: 0 })

@@ -1,6 +1,7 @@
 "use client";
 
 import { PlayerChart } from "@/components/dashboard/player-chart";
+import { DistributionCharts } from "@/components/dashboard/distribution-charts";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { parseUTC } from "@/lib/utils";
 import {
@@ -194,7 +195,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 3: Recent Events */}
+      {/* Row 3: Distribution Charts */}
+      <DistributionCharts />
+
+      {/* Row 4: Recent Events */}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">

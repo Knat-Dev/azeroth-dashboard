@@ -30,7 +30,10 @@ jest.mock('util', () => {
 
 describe('BackupService', () => {
   let service: BackupService;
-  let mockWebhookService: { sendNotification: jest.Mock; reloadConfig: jest.Mock };
+  let mockWebhookService: {
+    sendNotification: jest.Mock;
+    reloadConfig: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -51,28 +54,41 @@ describe('BackupService', () => {
       reloadConfig: jest.fn(),
     };
 
-    service = new BackupService(configService as any, mockWebhookService as any);
+    service = new BackupService(
+      configService as any,
+      mockWebhookService as any,
+    );
   });
 
   describe('filename validation (assertSafeFilename via getBackupPath)', () => {
     it('should accept a valid .sql.gz filename', () => {
-      expect(() => service.getBackupPath('acore_auth_2024-01-01.sql.gz')).not.toThrow();
+      expect(() =>
+        service.getBackupPath('acore_auth_2024-01-01.sql.gz'),
+      ).not.toThrow();
     });
 
     it('should reject path traversal with ../', () => {
-      expect(() => service.getBackupPath('../evil.sql.gz')).toThrow(BadRequestException);
+      expect(() => service.getBackupPath('../evil.sql.gz')).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject forward slash in filename', () => {
-      expect(() => service.getBackupPath('path/file.sql.gz')).toThrow(BadRequestException);
+      expect(() => service.getBackupPath('path/file.sql.gz')).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject backslash in filename', () => {
-      expect(() => service.getBackupPath('path\\file.sql.gz')).toThrow(BadRequestException);
+      expect(() => service.getBackupPath('path\\file.sql.gz')).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject wrong extension', () => {
-      expect(() => service.getBackupPath('backup.tar.gz')).toThrow(BadRequestException);
+      expect(() => service.getBackupPath('backup.tar.gz')).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject empty filename', () => {
@@ -156,40 +172,66 @@ describe('BackupService', () => {
       (service as any).matchesCron(date, cron);
 
     it('should match * * * * * for any date', () => {
-      expect(matchesCron(new Date('2024-06-15T14:30:00'), '* * * * *')).toBe(true);
+      expect(matchesCron(new Date('2024-06-15T14:30:00'), '* * * * *')).toBe(
+        true,
+      );
     });
 
     it('should match 0 3 * * * at 03:00', () => {
-      expect(matchesCron(new Date('2024-06-15T03:00:00'), '0 3 * * *')).toBe(true);
+      expect(matchesCron(new Date('2024-06-15T03:00:00'), '0 3 * * *')).toBe(
+        true,
+      );
     });
 
     it('should not match 0 3 * * * at 03:01', () => {
-      expect(matchesCron(new Date('2024-06-15T03:01:00'), '0 3 * * *')).toBe(false);
+      expect(matchesCron(new Date('2024-06-15T03:01:00'), '0 3 * * *')).toBe(
+        false,
+      );
     });
 
     it('should match */5 step values at minute 0, 5, 10', () => {
-      expect(matchesCron(new Date('2024-06-15T00:00:00'), '*/5 * * * *')).toBe(true);
-      expect(matchesCron(new Date('2024-06-15T00:05:00'), '*/5 * * * *')).toBe(true);
-      expect(matchesCron(new Date('2024-06-15T00:10:00'), '*/5 * * * *')).toBe(true);
+      expect(matchesCron(new Date('2024-06-15T00:00:00'), '*/5 * * * *')).toBe(
+        true,
+      );
+      expect(matchesCron(new Date('2024-06-15T00:05:00'), '*/5 * * * *')).toBe(
+        true,
+      );
+      expect(matchesCron(new Date('2024-06-15T00:10:00'), '*/5 * * * *')).toBe(
+        true,
+      );
     });
 
     it('should not match */5 step values at minute 3', () => {
-      expect(matchesCron(new Date('2024-06-15T00:03:00'), '*/5 * * * *')).toBe(false);
+      expect(matchesCron(new Date('2024-06-15T00:03:00'), '*/5 * * * *')).toBe(
+        false,
+      );
     });
 
     it('should match comma-separated lists 1,15,30', () => {
-      expect(matchesCron(new Date('2024-06-15T00:01:00'), '1,15,30 * * * *')).toBe(true);
-      expect(matchesCron(new Date('2024-06-15T00:15:00'), '1,15,30 * * * *')).toBe(true);
-      expect(matchesCron(new Date('2024-06-15T00:30:00'), '1,15,30 * * * *')).toBe(true);
+      expect(
+        matchesCron(new Date('2024-06-15T00:01:00'), '1,15,30 * * * *'),
+      ).toBe(true);
+      expect(
+        matchesCron(new Date('2024-06-15T00:15:00'), '1,15,30 * * * *'),
+      ).toBe(true);
+      expect(
+        matchesCron(new Date('2024-06-15T00:30:00'), '1,15,30 * * * *'),
+      ).toBe(true);
     });
 
     it('should match range 1-5 for values within range', () => {
-      expect(matchesCron(new Date('2024-06-15T01:00:00'), '0 1-5 * * *')).toBe(true);
-      expect(matchesCron(new Date('2024-06-15T05:00:00'), '0 1-5 * * *')).toBe(true);
+      expect(matchesCron(new Date('2024-06-15T01:00:00'), '0 1-5 * * *')).toBe(
+        true,
+      );
+      expect(matchesCron(new Date('2024-06-15T05:00:00'), '0 1-5 * * *')).toBe(
+        true,
+      );
     });
 
     it('should not match range 1-5 at boundary 6', () => {
-      expect(matchesCron(new Date('2024-06-15T06:00:00'), '0 1-5 * * *')).toBe(false);
+      expect(matchesCron(new Date('2024-06-15T06:00:00'), '0 1-5 * * *')).toBe(
+        false,
+      );
     });
 
     it('should return false for less than 5 fields', () => {

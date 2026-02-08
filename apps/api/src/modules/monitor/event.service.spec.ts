@@ -52,7 +52,13 @@ describe('EventService', () => {
     });
 
     it('should insert an event with actor', () => {
-      service.logEvent('ac-worldserver', 'restart', 'Manual restart', undefined, 'admin');
+      service.logEvent(
+        'ac-worldserver',
+        'restart',
+        'Manual restart',
+        undefined,
+        'admin',
+      );
       const events = service.getEvents(10);
       expect(events[0].actor).toBe('admin');
     });
@@ -130,7 +136,11 @@ describe('EventService', () => {
     it('should count matching events', () => {
       // SQLite datetime('now') returns 'YYYY-MM-DD HH:MM:SS' (no T, no Z)
       // Use the same format for the since parameter
-      const past = new Date(Date.now() - 60000).toISOString().replace('T', ' ').replace('Z', '').split('.')[0];
+      const past = new Date(Date.now() - 60000)
+        .toISOString()
+        .replace('T', ' ')
+        .replace('Z', '')
+        .split('.')[0];
       service.logEvent('ac-worldserver', 'crash', 'c1');
       service.logEvent('ac-worldserver', 'crash', 'c2');
       service.logEvent('ac-worldserver', 'recovery', 'r1');
@@ -176,9 +186,9 @@ describe('EventService', () => {
   describe('recordPlayerCount and prunePlayerHistory', () => {
     it('should record player count', () => {
       service.recordPlayerCount(42);
-      const rows = testDb
-        .prepare('SELECT count FROM player_history')
-        .all() as { count: number }[];
+      const rows = testDb.prepare('SELECT count FROM player_history').all() as {
+        count: number;
+      }[];
       expect(rows).toHaveLength(1);
       expect(rows[0].count).toBe(42);
     });
@@ -195,9 +205,9 @@ describe('EventService', () => {
 
       service.prunePlayerHistory();
 
-      const rows = testDb
-        .prepare('SELECT count FROM player_history')
-        .all() as { count: number }[];
+      const rows = testDb.prepare('SELECT count FROM player_history').all() as {
+        count: number;
+      }[];
       expect(rows).toHaveLength(1);
       expect(rows[0].count).toBe(20);
     });

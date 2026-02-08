@@ -15,10 +15,7 @@ describe('AccountsService', () => {
     accountRepo = createMockRepository();
     accountAccessRepo = createMockRepository();
 
-    service = new AccountsService(
-      accountRepo as any,
-      accountAccessRepo as any,
-    );
+    service = new AccountsService(accountRepo as any, accountAccessRepo as any);
   });
 
   describe('getProfile', () => {
@@ -93,9 +90,9 @@ describe('AccountsService', () => {
     });
 
     it('should throw BadRequestException for email too long', async () => {
-      await expect(
-        service.changeEmail(1, 'a'.repeat(256)),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.changeEmail(1, 'a'.repeat(256))).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

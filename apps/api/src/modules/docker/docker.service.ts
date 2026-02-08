@@ -29,11 +29,12 @@ export class DockerService {
   private readonly logger = new Logger(DockerService.name);
   private readonly socketPath = '/var/run/docker.sock';
 
-  private readonly allowedContainers: string[] =
-    (process.env.ALLOWED_CONTAINERS ?? 'ac-worldserver,ac-authserver')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+  private readonly allowedContainers: string[] = (
+    process.env.ALLOWED_CONTAINERS ?? 'ac-worldserver,ac-authserver'
+  )
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   private validateContainer(name: string): void {
     if (!this.allowedContainers.includes(name)) {
@@ -47,7 +48,12 @@ export class DockerService {
   dockerRequest(path: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const req = http.request(
-        { socketPath: this.socketPath, path, method: 'GET', timeout: DOCKER_REQUEST_TIMEOUT_MS },
+        {
+          socketPath: this.socketPath,
+          path,
+          method: 'GET',
+          timeout: DOCKER_REQUEST_TIMEOUT_MS,
+        },
         (res) => {
           const chunks: Buffer[] = [];
           res.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -65,7 +71,10 @@ export class DockerService {
           });
         },
       );
-      req.on('timeout', () => { req.destroy(); reject(new Error('Docker API request timed out')); });
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Docker API request timed out'));
+      });
       req.on('error', (err) => reject(err));
       req.end();
     });
@@ -75,7 +84,12 @@ export class DockerService {
   private dockerPost(path: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const req = http.request(
-        { socketPath: this.socketPath, path, method: 'POST', timeout: DOCKER_REQUEST_TIMEOUT_MS },
+        {
+          socketPath: this.socketPath,
+          path,
+          method: 'POST',
+          timeout: DOCKER_REQUEST_TIMEOUT_MS,
+        },
         (res) => {
           const chunks: Buffer[] = [];
           res.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -93,7 +107,10 @@ export class DockerService {
           });
         },
       );
-      req.on('timeout', () => { req.destroy(); reject(new Error('Docker API request timed out')); });
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Docker API request timed out'));
+      });
       req.on('error', (err) => reject(err));
       req.end();
     });
@@ -102,9 +119,7 @@ export class DockerService {
   /** List allowed containers with their state. */
   async listContainers(): Promise<ContainerInfo[]> {
     try {
-      const data = await this.dockerRequest(
-        '/v1.45/containers/json?all=true',
-      );
+      const data = await this.dockerRequest('/v1.45/containers/json?all=true');
       const containers: DockerContainerJson[] = JSON.parse(
         data.toString('utf-8'),
       );
@@ -127,14 +142,15 @@ export class DockerService {
   }
 
   /** Inspect a container — returns full Docker inspect JSON. */
-  async inspectContainer(
-    name: string,
-  ): Promise<{ tty: boolean; startedAt: string | null; state: string; status: string }> {
+  async inspectContainer(name: string): Promise<{
+    tty: boolean;
+    startedAt: string | null;
+    state: string;
+    status: string;
+  }> {
     this.validateContainer(name);
     try {
-      const data = await this.dockerRequest(
-        `/v1.45/containers/${name}/json`,
-      );
+      const data = await this.dockerRequest(`/v1.45/containers/${name}/json`);
       const info = JSON.parse(data.toString('utf-8'));
       return {
         tty: info.Config?.Tty === true,

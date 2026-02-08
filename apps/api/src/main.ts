@@ -32,9 +32,12 @@ async function bootstrap() {
 
   // Simple health check for orchestration tools (outside of global prefix)
   const express = app.getHttpAdapter().getInstance();
-  express.get('/health', (_req: unknown, res: { json: (body: unknown) => void }) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
-  });
+  express.get(
+    '/health',
+    (_req: unknown, res: { json: (body: unknown) => void }) => {
+      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    },
+  );
 
   await app.listen(process.env.PORT ?? 7791, '0.0.0.0');
 }

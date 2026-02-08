@@ -1,17 +1,34 @@
-import { Injectable, Inject, Logger, OnModuleInit, forwardRef, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  Logger,
+  OnModuleInit,
+  forwardRef,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { spawn, type ChildProcess } from 'child_process';
 import { promises as fs, createWriteStream } from 'fs';
 import { join } from 'path';
 import { WebhookService } from '../webhook/webhook.service.js';
 
-const ALLOWED_DATABASES = ['acore_auth', 'acore_characters', 'acore_playerbots', 'acore_world'];
+const ALLOWED_DATABASES = [
+  'acore_auth',
+  'acore_characters',
+  'acore_playerbots',
+  'acore_world',
+];
 const MYSQLDUMP_TIMEOUT_MS = 300_000; // 5 minutes
 const SCHEDULE_CHECK_INTERVAL_MS = 60_000; // 1 minute
 const MIN_VALID_BACKUP_SIZE = 100; // bytes
 
 function assertSafeFilename(filename: string): void {
-  if (!filename || /[\/\\]/.test(filename) || filename.includes('..') || !filename.endsWith('.sql.gz')) {
+  if (
+    !filename ||
+    /[\/\\]/.test(filename) ||
+    filename.includes('..') ||
+    !filename.endsWith('.sql.gz')
+  ) {
     throw new BadRequestException('Invalid backup filename');
   }
 }
@@ -40,16 +57,16 @@ export class BackupService implements OnModuleInit {
     @Inject(forwardRef(() => WebhookService))
     private webhookService: WebhookService,
   ) {
-    this.backupDir = configService.get<string>('backup.dir') ??
-      (process.env.NODE_ENV === 'production' ? '/backups' : join(process.cwd(), 'backups'));
+    this.backupDir =
+      configService.get<string>('backup.dir') ??
+      (process.env.NODE_ENV === 'production'
+        ? '/backups'
+        : join(process.cwd(), 'backups'));
     this.dbHost = configService.get<string>('DB_HOST', 'localhost');
     this.dbPort = configService.get<string>('DB_PORT', '3306');
     this.dbUser = configService.get<string>('DB_USER', 'root');
     this.dbPassword = configService.get<string>('DB_ROOT_PASSWORD', 'password');
-    this.retentionDays = configService.get<number>(
-      'backup.retentionDays',
-      30,
-    );
+    this.retentionDays = configService.get<number>('backup.retentionDays', 30);
     this.scheduleConfig = {
       enabled: false,
       cron: '0 3 * * *',
@@ -82,7 +99,9 @@ export class BackupService implements OnModuleInit {
         const stat = await fs.stat(filePath);
         if (stat.size <= MIN_VALID_BACKUP_SIZE) {
           await fs.unlink(filePath).catch(() => {});
-          throw new Error(`Backup file too small (${stat.size} bytes) — mysqldump likely failed`);
+          throw new Error(
+            `Backup file too small (${stat.size} bytes) — mysqldump likely failed`,
+          );
         }
         results.push({
           filename,
@@ -130,9 +149,12 @@ export class BackupService implements OnModuleInit {
 
       const dump = spawn('mysqldump', [
         '--protocol=tcp',
-        '-h', this.dbHost,
-        '-P', this.dbPort,
-        '-u', this.dbUser,
+        '-h',
+        this.dbHost,
+        '-P',
+        this.dbPort,
+        '-u',
+        this.dbUser,
         `-p${this.dbPassword}`,
         db,
       ]);
@@ -143,23 +165,34 @@ export class BackupService implements OnModuleInit {
       dump.stdout.pipe(gzip.stdin);
       gzip.stdout.pipe(outStream);
 
-      let stderrChunks: Buffer[] = [];
+      const stderrChunks: Buffer[] = [];
       dump.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
 
-      dump.on('error', (err) => { clearTimeout(timer); reject(err); });
-      gzip.on('error', (err) => { clearTimeout(timer); reject(err); });
+      dump.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+      gzip.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
 
       outStream.on('finish', () => {
         clearTimeout(timer);
         if (dump.exitCode !== 0) {
           const stderr = Buffer.concat(stderrChunks).toString().trim();
-          reject(new Error(`mysqldump exited with code ${dump.exitCode}: ${stderr}`));
+          reject(
+            new Error(`mysqldump exited with code ${dump.exitCode}: ${stderr}`),
+          );
         } else {
           resolve();
         }
       });
 
-      outStream.on('error', (err) => { clearTimeout(timer); reject(err); });
+      outStream.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
     });
   }
 
@@ -240,17 +273,14 @@ export class BackupService implements OnModuleInit {
     if (!this.scheduleConfig.enabled) return;
 
     // Simple interval-based scheduling (check every minute)
-    this.scheduleTimer = setInterval(
-      () => {
-        const now = new Date();
-        if (this.matchesCron(now, this.scheduleConfig.cron)) {
-          this.triggerBackup(this.scheduleConfig.databases).catch((err) =>
-            this.logger.error(`Scheduled backup failed: ${err}`),
-          );
-        }
-      },
-      SCHEDULE_CHECK_INTERVAL_MS,
-    );
+    this.scheduleTimer = setInterval(() => {
+      const now = new Date();
+      if (this.matchesCron(now, this.scheduleConfig.cron)) {
+        this.triggerBackup(this.scheduleConfig.databases).catch((err) =>
+          this.logger.error(`Scheduled backup failed: ${err}`),
+        );
+      }
+    }, SCHEDULE_CHECK_INTERVAL_MS);
   }
 
   private matchesCron(date: Date, cron: string): boolean {
@@ -258,11 +288,11 @@ export class BackupService implements OnModuleInit {
     if (parts.length < 5) return false;
     const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
     return (
-      this.cronFieldMatches(minute!, date.getMinutes()) &&
-      this.cronFieldMatches(hour!, date.getHours()) &&
-      this.cronFieldMatches(dayOfMonth!, date.getDate()) &&
-      this.cronFieldMatches(month!, date.getMonth() + 1) &&
-      this.cronFieldMatches(dayOfWeek!, date.getDay())
+      this.cronFieldMatches(minute, date.getMinutes()) &&
+      this.cronFieldMatches(hour, date.getHours()) &&
+      this.cronFieldMatches(dayOfMonth, date.getDate()) &&
+      this.cronFieldMatches(month, date.getMonth() + 1) &&
+      this.cronFieldMatches(dayOfWeek, date.getDay())
     );
   }
 
@@ -278,7 +308,9 @@ export class BackupService implements OnModuleInit {
       // Handle ranges: 1-5
       if (part.includes('-')) {
         const [min, max] = part.split('-').map((n) => parseInt(n, 10));
-        return min !== undefined && max !== undefined && value >= min && value <= max;
+        return (
+          min !== undefined && max !== undefined && value >= min && value <= max
+        );
       }
       return parseInt(part, 10) === value;
     });

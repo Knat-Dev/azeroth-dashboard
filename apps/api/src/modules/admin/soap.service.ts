@@ -13,7 +13,6 @@ const BLOCKED_COMMANDS = [
   '.rbac',
 ];
 
-
 @Injectable()
 export class SoapService {
   private readonly logger = new Logger(SoapService.name);

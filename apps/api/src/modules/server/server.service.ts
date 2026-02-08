@@ -82,13 +82,23 @@ export class ServerService {
     const qb = this.characterRepo
       .createQueryBuilder('c')
       .select([
-        'c.guid', 'c.name', 'c.level', 'c.class', 'c.race',
-        'c.gender', 'c.zone', 'c.map', 'c.money', 'c.totaltime',
+        'c.guid',
+        'c.name',
+        'c.level',
+        'c.class',
+        'c.race',
+        'c.gender',
+        'c.zone',
+        'c.map',
+        'c.money',
+        'c.totaltime',
       ])
       .where('c.online = 1');
 
     if (search) {
-      qb.andWhere('LOWER(c.name) LIKE LOWER(:search)', { search: `%${search}%` });
+      qb.andWhere('LOWER(c.name) LIKE LOWER(:search)', {
+        search: `%${search}%`,
+      });
     }
 
     const [characters, total] = await qb
@@ -98,7 +108,7 @@ export class ServerService {
 
     // Fetch guild names for these characters
     const guids = characters.map((c) => c.guid);
-    let guildMap = new Map<number, string>();
+    const guildMap = new Map<number, string>();
     if (guids.length > 0) {
       const guildMembers = await this.guildMemberRepo
         .createQueryBuilder('gm')

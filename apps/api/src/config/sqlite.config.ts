@@ -10,8 +10,7 @@ let db: Database.Database | null = null;
 export function getDatabase(): Database.Database {
   if (db) return db;
 
-  const dbDir =
-    process.env.NODE_ENV === 'production' ? '/data' : './data';
+  const dbDir = process.env.NODE_ENV === 'production' ? '/data' : './data';
   const dbPath = path.join(dbDir, 'dashboard.db');
 
   // Ensure directory exists
@@ -54,7 +53,9 @@ export function getDatabase(): Database.Database {
   `);
 
   // Migration: add actor column if missing (safe for existing DBs)
-  const columns = db.prepare(`PRAGMA table_info(events)`).all() as { name: string }[];
+  const columns = db.prepare(`PRAGMA table_info(events)`).all() as {
+    name: string;
+  }[];
   if (!columns.some((c) => c.name === 'actor')) {
     db.exec(`ALTER TABLE events ADD COLUMN actor TEXT`);
     logger.log('Migrated events table: added actor column');

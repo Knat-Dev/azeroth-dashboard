@@ -17,7 +17,8 @@ describe('WebhookService', () => {
 
     const configService = createMockConfigService({
       DISCORD_WEBHOOK_URL: 'https://discord.com/api/webhooks/test',
-      WEBHOOK_EVENTS: 'crash,restart_failed,crash_loop,backup_success,backup_failed',
+      WEBHOOK_EVENTS:
+        'crash,restart_failed,crash_loop,backup_success,backup_failed',
     });
 
     service = new WebhookService(configService as any, mockEventService as any);
@@ -27,7 +28,12 @@ describe('WebhookService', () => {
     it('should send notification for enabled event type', async () => {
       mockedAxios.post.mockResolvedValue({ status: 204 });
 
-      service.sendNotification('crash', 'high', 'Server crashed', 'Details here');
+      service.sendNotification(
+        'crash',
+        'high',
+        'Server crashed',
+        'Details here',
+      );
 
       // Give fire-and-forget a tick to execute
       await new Promise((r) => setTimeout(r, 10));
@@ -50,7 +56,10 @@ describe('WebhookService', () => {
         DISCORD_WEBHOOK_URL: '',
         WEBHOOK_EVENTS: 'crash',
       });
-      const svc = new WebhookService(configService as any, mockEventService as any);
+      const svc = new WebhookService(
+        configService as any,
+        mockEventService as any,
+      );
 
       svc.sendNotification('crash', 'high', 'Test', 'Details');
 

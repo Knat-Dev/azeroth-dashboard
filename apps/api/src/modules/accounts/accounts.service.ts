@@ -3,10 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Account } from '../../entities/auth/account.entity.js';
 import { AccountAccess } from '../../entities/auth/account-access.entity.js';
-import {
-  checkPassword,
-  makeRegistrationData,
-} from '../auth/srp6.util.js';
+import { checkPassword, makeRegistrationData } from '../auth/srp6.util.js';
 
 @Injectable()
 export class AccountsService {

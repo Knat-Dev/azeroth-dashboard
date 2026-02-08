@@ -44,7 +44,7 @@ describe('SoapService', () => {
 
       await service.executeCommand('.announce <Hello> & "World"');
 
-      const sentBody = mockedAxios.post.mock.calls[0]![1] as string;
+      const sentBody = mockedAxios.post.mock.calls[0][1] as string;
       expect(sentBody).toContain('&lt;Hello&gt;');
       expect(sentBody).toContain('&amp;');
       expect(sentBody).toContain('&quot;World&quot;');
@@ -83,7 +83,7 @@ describe('SoapService', () => {
 
       await service.executeCommand("it's a test");
 
-      const sentBody = mockedAxios.post.mock.calls[0]![1] as string;
+      const sentBody = mockedAxios.post.mock.calls[0][1] as string;
       expect(sentBody).toContain('&apos;');
       expect(sentBody).not.toContain("it's");
     });
@@ -113,7 +113,9 @@ describe('SoapService', () => {
     it('should return unknown error when fault has no faultstring', async () => {
       mockedAxios.post.mockRejectedValueOnce({
         isAxiosError: true,
-        response: { data: '<soap:Fault><detail>some error</detail></soap:Fault>' },
+        response: {
+          data: '<soap:Fault><detail>some error</detail></soap:Fault>',
+        },
       });
       (mockedAxios as any).isAxiosError = jest.fn(() => true);
 

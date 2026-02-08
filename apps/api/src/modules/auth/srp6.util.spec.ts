@@ -1,4 +1,8 @@
-import { calculateVerifier, makeRegistrationData, checkPassword } from './srp6.util';
+import {
+  calculateVerifier,
+  makeRegistrationData,
+  checkPassword,
+} from './srp6.util';
 
 describe('SRP6 Utility', () => {
   describe('calculateVerifier', () => {
@@ -77,12 +81,16 @@ describe('SRP6 Utility', () => {
 
     it('should return false for incorrect password', () => {
       const { salt, verifier } = makeRegistrationData('TESTUSER', 'TESTPASS');
-      expect(checkPassword('TESTUSER', 'WRONGPASS', salt, verifier)).toBe(false);
+      expect(checkPassword('TESTUSER', 'WRONGPASS', salt, verifier)).toBe(
+        false,
+      );
     });
 
     it('should return false for incorrect username', () => {
       const { salt, verifier } = makeRegistrationData('TESTUSER', 'TESTPASS');
-      expect(checkPassword('WRONGUSER', 'TESTPASS', salt, verifier)).toBe(false);
+      expect(checkPassword('WRONGUSER', 'TESTPASS', salt, verifier)).toBe(
+        false,
+      );
     });
 
     it('should be case-insensitive for verification', () => {

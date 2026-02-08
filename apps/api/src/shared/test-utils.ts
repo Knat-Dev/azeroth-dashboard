@@ -81,7 +81,9 @@ export function createMockAccount(overrides: Partial<Account> = {}): Account {
 }
 
 /** Create a mock AccountAccess entity. */
-export function createMockAccountAccess(overrides: Partial<AccountAccess> = {}): AccountAccess {
+export function createMockAccountAccess(
+  overrides: Partial<AccountAccess> = {},
+): AccountAccess {
   return {
     id: 1,
     gmlevel: 3,
@@ -92,7 +94,9 @@ export function createMockAccountAccess(overrides: Partial<AccountAccess> = {}):
 }
 
 /** Create a mock Character entity with optional overrides. */
-export function createMockCharacter(overrides: Partial<Character> = {}): Character {
+export function createMockCharacter(
+  overrides: Partial<Character> = {},
+): Character {
   return {
     guid: 1,
     account: 1,

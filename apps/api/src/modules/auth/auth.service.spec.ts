@@ -30,7 +30,9 @@ describe('AuthService', () => {
     it('should return auth response for valid credentials with GM level 3+', async () => {
       const account = createMockAccount();
       accountRepo.findOne.mockResolvedValue(account);
-      accountAccessRepo.findOne.mockResolvedValue(createMockAccountAccess({ gmlevel: 3 }));
+      accountAccessRepo.findOne.mockResolvedValue(
+        createMockAccountAccess({ gmlevel: 3 }),
+      );
 
       const result = await service.login('testuser', 'TESTPASS');
 
@@ -65,7 +67,9 @@ describe('AuthService', () => {
     it('should throw ForbiddenException for GM level 0', async () => {
       const account = createMockAccount();
       accountRepo.findOne.mockResolvedValue(account);
-      accountAccessRepo.findOne.mockResolvedValue(createMockAccountAccess({ gmlevel: 0 }));
+      accountAccessRepo.findOne.mockResolvedValue(
+        createMockAccountAccess({ gmlevel: 0 }),
+      );
 
       await expect(service.login('testuser', 'TESTPASS')).rejects.toThrow(
         ForbiddenException,
@@ -75,7 +79,9 @@ describe('AuthService', () => {
     it('should throw ForbiddenException for GM level 2 (boundary below 3)', async () => {
       const account = createMockAccount();
       accountRepo.findOne.mockResolvedValue(account);
-      accountAccessRepo.findOne.mockResolvedValue(createMockAccountAccess({ gmlevel: 2 }));
+      accountAccessRepo.findOne.mockResolvedValue(
+        createMockAccountAccess({ gmlevel: 2 }),
+      );
 
       await expect(service.login('testuser', 'TESTPASS')).rejects.toThrow(
         ForbiddenException,
@@ -95,7 +101,9 @@ describe('AuthService', () => {
     it('should be case insensitive (lowercase input matches uppercase DB)', async () => {
       const account = createMockAccount({ username: 'TESTUSER' });
       accountRepo.findOne.mockResolvedValue(account);
-      accountAccessRepo.findOne.mockResolvedValue(createMockAccountAccess({ gmlevel: 3 }));
+      accountAccessRepo.findOne.mockResolvedValue(
+        createMockAccountAccess({ gmlevel: 3 }),
+      );
 
       const result = await service.login('testuser', 'TESTPASS');
 
@@ -110,7 +118,9 @@ describe('AuthService', () => {
     it('should return auth response for valid userId', async () => {
       const account = createMockAccount();
       accountRepo.findOne.mockResolvedValue(account);
-      accountAccessRepo.findOne.mockResolvedValue(createMockAccountAccess({ gmlevel: 4 }));
+      accountAccessRepo.findOne.mockResolvedValue(
+        createMockAccountAccess({ gmlevel: 4 }),
+      );
 
       const result = await service.refresh(1);
 
@@ -121,9 +131,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException for unknown userId', async () => {
       accountRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.refresh(999)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.refresh(999)).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -131,7 +139,9 @@ describe('AuthService', () => {
     it('should return correct shape with accessToken and user object', async () => {
       const account = createMockAccount();
       accountRepo.findOne.mockResolvedValue(account);
-      accountAccessRepo.findOne.mockResolvedValue(createMockAccountAccess({ gmlevel: 3 }));
+      accountAccessRepo.findOne.mockResolvedValue(
+        createMockAccountAccess({ gmlevel: 3 }),
+      );
 
       const result = await service.login('testuser', 'TESTPASS');
 

@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GuildsService } from './guilds.service.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -12,10 +19,7 @@ export class GuildsController {
 
   @ApiOperation({ summary: 'List guilds' })
   @Get()
-  listGuilds(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
+  listGuilds(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.guildsService.listGuilds(
       parseInt(page ?? '1', 10),
       parseInt(limit ?? '20', 10),

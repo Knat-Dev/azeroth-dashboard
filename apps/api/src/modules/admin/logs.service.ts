@@ -106,9 +106,7 @@ export class LogsService {
       (err) => {
         this.logger.error(`Docker request error: ${err.message}`);
         try {
-          res.write(
-            `data: ${JSON.stringify({ error: err.message })}\n\n`,
-          );
+          res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
           res.end();
         } catch {
           // Ignore

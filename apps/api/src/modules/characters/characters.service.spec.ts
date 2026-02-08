@@ -65,17 +65,17 @@ describe('CharactersService', () => {
       const char = createMockCharacter({ guid: 1, account: 2 });
       characterRepo.findOne.mockResolvedValue(char);
 
-      await expect(
-        service.getCharacterDetail(1, 1, false),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getCharacterDetail(1, 1, false)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when character not found', async () => {
       characterRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.getCharacterDetail(999, 1, false),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getCharacterDetail(999, 1, false)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -90,8 +90,22 @@ describe('CharactersService', () => {
 
       const qb = createMockQueryBuilder();
       qb.getMany.mockResolvedValue([
-        { guid: 100, itemEntry: 1234, ownerGuid: 1, count: 1, enchantments: null, durability: 100 },
-        { guid: 101, itemEntry: 5678, ownerGuid: 1, count: 1, enchantments: null, durability: 50 },
+        {
+          guid: 100,
+          itemEntry: 1234,
+          ownerGuid: 1,
+          count: 1,
+          enchantments: null,
+          durability: 100,
+        },
+        {
+          guid: 101,
+          itemEntry: 5678,
+          ownerGuid: 1,
+          count: 1,
+          enchantments: null,
+          durability: 50,
+        },
       ]);
       itemInstanceRepo.createQueryBuilder.mockReturnValue(qb);
 

@@ -137,8 +137,8 @@ export default function BansPage() {
     if (!dur.trim()) return 0; // permanent
     const match = dur.match(/^(\d+)\s*([dhms]?)$/i);
     if (!match) return 0;
-    const val = parseInt(match[1], 10);
-    const unit = (match[2] || "d").toLowerCase();
+    const val = parseInt(match[1] ?? "0", 10);
+    const unit = (match[2] ?? "d").toLowerCase();
     if (unit === "h") return val * 3600;
     if (unit === "m") return val * 60;
     if (unit === "s") return val;

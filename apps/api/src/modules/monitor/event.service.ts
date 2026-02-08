@@ -37,7 +37,13 @@ export class EventService implements OnModuleDestroy {
         .prepare(
           `INSERT INTO events (container, event_type, details, duration_ms, actor) VALUES (?, ?, ?, ?, ?)`,
         )
-        .run(container, eventType, details ?? null, durationMs ?? null, actor ?? null);
+        .run(
+          container,
+          eventType,
+          details ?? null,
+          durationMs ?? null,
+          actor ?? null,
+        );
     } catch (err) {
       this.logger.error(`Failed to log event: ${err}`);
     }
@@ -108,9 +114,7 @@ export class EventService implements OnModuleDestroy {
           .all(since, container) as ServerEvent[];
       }
       return this.db
-        .prepare(
-          `SELECT * FROM events WHERE timestamp >= ? ORDER BY id DESC`,
-        )
+        .prepare(`SELECT * FROM events WHERE timestamp >= ? ORDER BY id DESC`)
         .all(since) as ServerEvent[];
     } catch (err) {
       this.logger.error(`Failed to get events since ${since}: ${err}`);
@@ -207,9 +211,10 @@ export class EventService implements OnModuleDestroy {
   /** Get all settings as a record */
   getAllSettings(): Record<string, string> {
     try {
-      const rows = this.db
-        .prepare(`SELECT key, value FROM settings`)
-        .all() as { key: string; value: string }[];
+      const rows = this.db.prepare(`SELECT key, value FROM settings`).all() as {
+        key: string;
+        value: string;
+      }[];
       const result: Record<string, string> = {};
       for (const row of rows) {
         result[row.key] = row.value;

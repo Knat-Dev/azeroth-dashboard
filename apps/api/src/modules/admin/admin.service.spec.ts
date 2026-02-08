@@ -12,18 +12,21 @@ describe('AdminService', () => {
   let accountRepo: ReturnType<typeof createMockRepository>;
   let accountAccessRepo: ReturnType<typeof createMockRepository>;
   let accountBannedRepo: ReturnType<typeof createMockRepository>;
+  let ipBannedRepo: ReturnType<typeof createMockRepository>;
   let characterRepo: ReturnType<typeof createMockRepository>;
 
   beforeEach(() => {
     accountRepo = createMockRepository();
     accountAccessRepo = createMockRepository();
     accountBannedRepo = createMockRepository();
+    ipBannedRepo = createMockRepository();
     characterRepo = createMockRepository();
 
     service = new AdminService(
       accountRepo as any,
       accountAccessRepo as any,
       accountBannedRepo as any,
+      ipBannedRepo as any,
       characterRepo as any,
     );
   });
@@ -35,7 +38,11 @@ describe('AdminService', () => {
       accountRepo.createQueryBuilder.mockReturnValue(qb);
       accountRepo.save.mockResolvedValue({ id: 10, username: 'NEWUSER' });
 
-      const result = await service.createAccount('newuser', 'pass123', 'test@email.com');
+      const result = await service.createAccount(
+        'newuser',
+        'pass123',
+        'test@email.com',
+      );
 
       expect(result).toEqual({ id: 10, username: 'NEWUSER' });
       expect(accountRepo.create).toHaveBeenCalledWith(
@@ -241,14 +248,16 @@ describe('AdminService', () => {
       const qb = createMockQueryBuilder();
       qb.getCount.mockResolvedValue(1);
       qb.getRawAndEntities.mockResolvedValue({
-        entities: [{
-          id: 1,
-          bandate: Math.floor(Date.now() / 1000),
-          unbandate: Math.floor(Date.now() / 1000) + 3600,
-          bannedby: 'admin',
-          banreason: 'test',
-          active: 1,
-        }],
+        entities: [
+          {
+            id: 1,
+            bandate: Math.floor(Date.now() / 1000),
+            unbandate: Math.floor(Date.now() / 1000) + 3600,
+            bannedby: 'admin',
+            banreason: 'test',
+            active: 1,
+          },
+        ],
         raw: [{ username: 'TESTUSER' }],
       });
       accountBannedRepo.createQueryBuilder.mockReturnValue(qb);

@@ -26,7 +26,11 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { GmLevel } from '../../common/enums/gm-level.enum.js';
-import { CreateAccountDto, BanAccountDto, ExecuteCommandDto } from './admin.dto.js';
+import {
+  CreateAccountDto,
+  BanAccountDto,
+  ExecuteCommandDto,
+} from './admin.dto.js';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -77,7 +81,13 @@ export class AdminController {
       body.expansion,
       body.gmLevel,
     );
-    this.eventService.logEvent('dashboard', 'account_created', `Created account: ${body.username}`, undefined, user.username);
+    this.eventService.logEvent(
+      'dashboard',
+      'account_created',
+      `Created account: ${body.username}`,
+      undefined,
+      user.username,
+    );
     return result;
   }
 
@@ -103,7 +113,13 @@ export class AdminController {
       body.reason,
       body.duration,
     );
-    this.eventService.logEvent('dashboard', 'account_banned', `Banned account #${id}: ${body.reason}`, undefined, user.username);
+    this.eventService.logEvent(
+      'dashboard',
+      'account_banned',
+      `Banned account #${id}: ${body.reason}`,
+      undefined,
+      user.username,
+    );
     return result;
   }
 
@@ -114,7 +130,13 @@ export class AdminController {
     @CurrentUser() user: { username: string },
   ) {
     const result = await this.adminService.unbanAccount(id);
-    this.eventService.logEvent('dashboard', 'account_unbanned', `Unbanned account #${id}`, undefined, user.username);
+    this.eventService.logEvent(
+      'dashboard',
+      'account_unbanned',
+      `Unbanned account #${id}`,
+      undefined,
+      user.username,
+    );
     return result;
   }
 
@@ -140,7 +162,13 @@ export class AdminController {
     @Body() body: ExecuteCommandDto,
   ) {
     const result = await this.soapService.executeCommand(body.command);
-    this.eventService.logEvent('ac-worldserver', 'soap_command', body.command, undefined, user.username);
+    this.eventService.logEvent(
+      'ac-worldserver',
+      'soap_command',
+      body.command,
+      undefined,
+      user.username,
+    );
     return result;
   }
 
@@ -151,7 +179,13 @@ export class AdminController {
     @CurrentUser() user: { username: string },
     @Param('container') container: string,
   ) {
-    this.eventService.logEvent(container, 'manual_restart', `Manual restart by admin`, undefined, user.username);
+    this.eventService.logEvent(
+      container,
+      'manual_restart',
+      `Manual restart by admin`,
+      undefined,
+      user.username,
+    );
     this.monitorService.clearCrashLoop(container);
     return this.dockerService.restartContainer(container);
   }
@@ -171,7 +205,13 @@ export class AdminController {
     for (const [key, value] of Object.entries(body)) {
       this.eventService.setSetting(key, value);
     }
-    this.eventService.logEvent('dashboard', 'settings_updated', `Keys: ${Object.keys(body).join(', ')}`, undefined, user.username);
+    this.eventService.logEvent(
+      'dashboard',
+      'settings_updated',
+      `Keys: ${Object.keys(body).join(', ')}`,
+      undefined,
+      user.username,
+    );
     // Reload runtime config in monitor + webhook services
     this.monitorService.reloadAllSettings();
     return { success: true };
@@ -188,10 +228,7 @@ export class AdminController {
 
   @ApiOperation({ summary: 'List active IP bans' })
   @Get('ip-bans')
-  listIpBans(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
+  listIpBans(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.adminService.listIpBans(
       parseInt(page ?? '1', 10),
       parseInt(limit ?? '20', 10),
@@ -210,7 +247,13 @@ export class AdminController {
       body.reason,
       body.duration,
     );
-    this.eventService.logEvent('dashboard', 'ip_banned', `Banned IP ${body.ip}: ${body.reason}`, undefined, user.username);
+    this.eventService.logEvent(
+      'dashboard',
+      'ip_banned',
+      `Banned IP ${body.ip}: ${body.reason}`,
+      undefined,
+      user.username,
+    );
     return result;
   }
 
@@ -221,7 +264,13 @@ export class AdminController {
     @Param('ip') ip: string,
   ) {
     const result = await this.adminService.removeIpBan(ip);
-    this.eventService.logEvent('dashboard', 'ip_unbanned', `Unbanned IP ${ip}`, undefined, user.username);
+    this.eventService.logEvent(
+      'dashboard',
+      'ip_unbanned',
+      `Unbanned IP ${ip}`,
+      undefined,
+      user.username,
+    );
     return result;
   }
 
@@ -235,7 +284,13 @@ export class AdminController {
     @Body() body: { password: string },
   ) {
     const result = await this.adminService.resetPassword(id, body.password);
-    this.eventService.logEvent('dashboard', 'password_reset', `Reset password for account #${id}`, undefined, user.username);
+    this.eventService.logEvent(
+      'dashboard',
+      'password_reset',
+      `Reset password for account #${id}`,
+      undefined,
+      user.username,
+    );
     return result;
   }
 }

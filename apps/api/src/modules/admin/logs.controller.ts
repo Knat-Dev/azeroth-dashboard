@@ -39,10 +39,7 @@ export class LogsController {
   @Get('containers/:name')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(GmLevel.ADMINISTRATOR)
-  getContainerLogs(
-    @Param('name') name: string,
-    @Query('tail') tail?: string,
-  ) {
+  getContainerLogs(@Param('name') name: string, @Query('tail') tail?: string) {
     return this.logsService.getContainerLogs(
       name,
       tail ? parseInt(tail, 10) : 500,

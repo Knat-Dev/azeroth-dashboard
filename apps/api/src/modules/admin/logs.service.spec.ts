@@ -23,7 +23,9 @@ describe('LogsService', () => {
   describe('getContainerLogs', () => {
     it('should return logs for allowed container', async () => {
       mockDockerService.isAllowedContainer.mockReturnValue(true);
-      mockDockerService.dockerRequest.mockResolvedValue(Buffer.from('log output'));
+      mockDockerService.dockerRequest.mockResolvedValue(
+        Buffer.from('log output'),
+      );
       mockDockerService.stripMultiplexedHeaders.mockReturnValue('log output');
 
       const result = await service.getContainerLogs('ac-worldserver');
@@ -43,7 +45,9 @@ describe('LogsService', () => {
 
     it('should handle docker failure gracefully', async () => {
       mockDockerService.isAllowedContainer.mockReturnValue(true);
-      mockDockerService.dockerRequest.mockRejectedValue(new Error('Docker socket error'));
+      mockDockerService.dockerRequest.mockRejectedValue(
+        new Error('Docker socket error'),
+      );
 
       const result = await service.getContainerLogs('ac-worldserver');
 
@@ -55,7 +59,12 @@ describe('LogsService', () => {
   describe('listContainers', () => {
     it('should delegate to dockerService', async () => {
       const containers = [
-        { name: 'ac-worldserver', state: 'running', status: 'Up', image: 'test' },
+        {
+          name: 'ac-worldserver',
+          state: 'running',
+          status: 'Up',
+          image: 'test',
+        },
       ];
       mockDockerService.listContainers.mockResolvedValue(containers);
 

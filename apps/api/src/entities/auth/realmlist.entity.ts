@@ -22,7 +22,12 @@ export class Realmlist {
   @Column({ type: 'varchar', length: 255, default: '127.0.0.1' })
   address!: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'localAddress', default: '127.0.0.1' })
+  @Column({
+    type: 'varchar',
+    length: 255,
+    name: 'localAddress',
+    default: '127.0.0.1',
+  })
   localAddress!: string;
 
   @Column({ type: 'smallint', unsigned: true, default: 8085 })

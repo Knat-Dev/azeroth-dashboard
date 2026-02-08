@@ -9,7 +9,9 @@ describe('BroadcastService', () => {
   beforeEach(() => {
     autobroadcastRepo = createMockRepository();
     mockSoapService = {
-      executeCommand: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
+      executeCommand: jest
+        .fn()
+        .mockResolvedValue({ success: true, message: 'ok' }),
     };
 
     service = new BroadcastService(
@@ -23,14 +25,18 @@ describe('BroadcastService', () => {
       const results = await service.sendBroadcast('Hello', 'announce');
 
       expect(results).toHaveLength(1);
-      expect(mockSoapService.executeCommand).toHaveBeenCalledWith('.announce Hello');
+      expect(mockSoapService.executeCommand).toHaveBeenCalledWith(
+        '.announce Hello',
+      );
     });
 
     it('should send notify only', async () => {
       const results = await service.sendBroadcast('Hello', 'notify');
 
       expect(results).toHaveLength(1);
-      expect(mockSoapService.executeCommand).toHaveBeenCalledWith('.notify Hello');
+      expect(mockSoapService.executeCommand).toHaveBeenCalledWith(
+        '.notify Hello',
+      );
     });
 
     it('should send both announce and notify', async () => {
@@ -38,8 +44,12 @@ describe('BroadcastService', () => {
 
       expect(results).toHaveLength(2);
       expect(mockSoapService.executeCommand).toHaveBeenCalledTimes(2);
-      expect(mockSoapService.executeCommand).toHaveBeenCalledWith('.announce Hello');
-      expect(mockSoapService.executeCommand).toHaveBeenCalledWith('.notify Hello');
+      expect(mockSoapService.executeCommand).toHaveBeenCalledWith(
+        '.announce Hello',
+      );
+      expect(mockSoapService.executeCommand).toHaveBeenCalledWith(
+        '.notify Hello',
+      );
     });
   });
 

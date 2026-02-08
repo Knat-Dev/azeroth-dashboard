@@ -12,13 +12,12 @@ export class BroadcastService {
     private soapService: SoapService,
   ) {}
 
-  async sendBroadcast(
-    message: string,
-    type: 'announce' | 'notify' | 'both',
-  ) {
+  async sendBroadcast(message: string, type: 'announce' | 'notify' | 'both') {
     const results = [];
     if (type === 'announce' || type === 'both') {
-      results.push(await this.soapService.executeCommand(`.announce ${message}`));
+      results.push(
+        await this.soapService.executeCommand(`.announce ${message}`),
+      );
     }
     if (type === 'notify' || type === 'both') {
       results.push(await this.soapService.executeCommand(`.notify ${message}`));
