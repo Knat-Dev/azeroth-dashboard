@@ -26,7 +26,11 @@ jest.mock('fs', () => {
     writeFile: jest.fn().mockResolvedValue(undefined),
   };
   mockCreateWriteStream = jest.fn();
-  return { ...actual, promises: mockFsPromises, createWriteStream: mockCreateWriteStream };
+  return {
+    ...actual,
+    promises: mockFsPromises,
+    createWriteStream: mockCreateWriteStream,
+  };
 });
 
 /** Create a mock ChildProcess with EventEmitter semantics */

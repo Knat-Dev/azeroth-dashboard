@@ -6,6 +6,7 @@ import { useTheme } from "@/providers/theme-provider";
 import {
   Activity,
   Ban,
+  Coffee,
   Database,
   Home,
   LogOut,
@@ -181,8 +182,9 @@ export function Sidebar({
       <aside
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
+        style={expanded && !pinned ? { background: "var(--color-glass-elevated)" } : undefined}
         className={cn(
-          "flex h-screen flex-col overflow-hidden bg-card border-r border-border transition-all duration-200 z-50",
+          "flex h-screen flex-col overflow-hidden glass transition-all duration-200 z-50",
           // Mobile: fixed drawer with translate
           "fixed inset-y-0 left-0 w-56",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
@@ -225,6 +227,20 @@ export function Sidebar({
         {/* Theme toggle */}
         <ThemeToggle expanded={expanded} />
 
+        {/* Buy me a coffee */}
+        <div className="border-t border-border px-2 py-2">
+          <a
+            href="https://buymeacoffee.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Buy me a coffee"
+            className="flex items-center gap-3 rounded-lg px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-amber-500"
+          >
+            <Coffee className="h-4 w-4 shrink-0" />
+            <span className={fadeText(expanded)}>Buy me a coffee</span>
+          </a>
+        </div>
+
         {/* Bottom: User */}
         <div className="border-t border-border px-2 py-3">
           <div ref={menuRef} className="relative">
@@ -243,7 +259,7 @@ export function Sidebar({
             {/* Popup menu */}
             {userMenuOpen && (
               <div className={cn(
-                "absolute z-50 rounded-lg border border-border bg-card py-1 shadow-lg",
+                "absolute z-50 rounded-lg glass py-1 shadow-lg",
                 expanded
                   ? "bottom-full left-0 mb-1 w-full"
                   : "bottom-0 left-full ml-2 w-40",

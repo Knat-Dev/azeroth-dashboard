@@ -38,7 +38,7 @@ export function DistributionCharts() {
         {[0, 1].map((i) => (
           <div
             key={i}
-            className="flex h-[280px] items-center justify-center rounded-xl border border-border bg-card"
+            className="flex h-[280px] items-center justify-center rounded-xl glass"
           >
             <p className="text-sm text-muted-foreground">Loading...</p>
           </div>
@@ -167,7 +167,7 @@ export function DistributionCharts() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-xl glass p-4">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Class Distribution
@@ -179,7 +179,7 @@ export function DistributionCharts() {
         <HighchartsReact highcharts={Highcharts} options={classChartOptions} />
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-xl glass p-4">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Faction / Race

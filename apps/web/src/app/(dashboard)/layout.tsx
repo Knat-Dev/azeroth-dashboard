@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { Sidebar } from "@/components/layout/sidebar";
 import { HealthBar } from "@/components/layout/health-bar";
 import { API_URL } from "@/lib/api";
+
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [pinned, setPinned] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("sidebar-pinned") === "true";
@@ -94,7 +96,7 @@ export default function DashboardLayout({
       {!pinned && <div className="hidden md:block w-16 shrink-0" />}
       <div className="flex flex-1 flex-col overflow-hidden">
         <HealthBar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
+        <main key={pathname} className="page-enter flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
           {children}
         </main>
       </div>

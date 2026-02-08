@@ -7,6 +7,25 @@ import type { PlayerHistoryPoint } from "@repo/shared";
 import { api } from "@/lib/api";
 import { parseUTC } from "@/lib/utils";
 
+function usePrimaryColor() {
+  const [color, setColor] = useState("#f5a623");
+  useEffect(() => {
+    function read() {
+      setColor(getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim());
+    }
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+  return color;
+}
+
+function hexToRgb(hex: string): string {
+  const h = hex.replace("#", "");
+  return `${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)}`;
+}
+
 const RANGES = ["24h", "7d", "30d"] as const;
 type Range = typeof RANGES[number];
 
@@ -14,6 +33,8 @@ export function PlayerChart() {
   const [range, setRange] = useState<Range>("24h");
   const [data, setData] = useState<PlayerHistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const primary = usePrimaryColor();
+  const primaryRgb = hexToRgb(primary);
 
   const fetchData = useCallback(async (r: Range) => {
     setLoading(true);
@@ -74,19 +95,19 @@ export function PlayerChart() {
         fillColor: {
           linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
           stops: [
-            [0, "rgba(245, 166, 35, 0.3)"],
-            [1, "rgba(245, 166, 35, 0.0)"],
+            [0, `rgba(${primaryRgb}, 0.3)`],
+            [1, `rgba(${primaryRgb}, 0.0)`],
           ],
         },
-        lineColor: "#f5a623",
+        lineColor: primary,
         lineWidth: 2,
         marker: {
           enabled: false,
           states: {
             hover: {
               enabled: true,
-              fillColor: "#f5a623",
-              lineColor: "#f5a623",
+              fillColor: primary,
+              lineColor: primary,
               radius: 4,
             },
           },
@@ -103,7 +124,7 @@ export function PlayerChart() {
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-xl glass p-4">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Player Count

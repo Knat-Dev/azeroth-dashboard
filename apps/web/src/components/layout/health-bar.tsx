@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 
 function StatusDot({ state }: { state: "running" | "stopped" | "restarting" | "unknown" }) {
   const styles = {
-    running: "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]",
+    running: "bg-green-500 pulse-glow",
     stopped: "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]",
     restarting: "bg-yellow-500 animate-pulse",
     unknown: "bg-muted-foreground/50",
@@ -66,7 +66,7 @@ export function HealthBar({ onMenuClick }: { onMenuClick: () => void }) {
   ];
 
   return (
-    <div className="flex items-center gap-4 border-b border-border bg-card px-4 md:px-6 py-2.5">
+    <div className="flex items-center gap-4 border-b border-border glass px-4 md:px-6 py-2.5">
       <button className="md:hidden text-muted-foreground hover:text-foreground transition-colors" onClick={onMenuClick}>
         <Menu className="h-5 w-5" />
       </button>

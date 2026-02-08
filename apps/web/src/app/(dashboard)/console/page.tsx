@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { useConsole, type ConsoleLine } from "@/hooks/use-console";
 import Convert from "ansi-to-html";
 
@@ -55,6 +55,10 @@ export default function ConsolePage() {
     setHistoryIndex,
     handleScroll, handleCommand, handleKeyDown, clearTerminal,
   } = useConsole(toHtml);
+
+  useEffect(() => {
+    if (isWorldserver) inputRef.current?.focus();
+  }, [isWorldserver, inputRef]);
 
   return (
     <div className="flex h-full flex-col">

@@ -119,7 +119,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Faction Theme Section */}
-      <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+      <div className="rounded-xl glass p-4 md:p-6">
         <div className="mb-5 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <Palette className="h-4 w-4 text-primary" />
@@ -162,7 +162,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Auto-Restart Section */}
-      <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+      <div className="rounded-xl glass p-4 md:p-6">
         <div className="mb-5 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <RefreshCw className="h-4 w-4 text-primary" />
@@ -282,7 +282,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Crash Loop Protection Section */}
-      <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+      <div className="rounded-xl glass p-4 md:p-6">
         <div className="mb-5 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <Settings className="h-4 w-4 text-yellow-400" />
@@ -343,7 +343,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Discord Webhooks Section */}
-      <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+      <div className="rounded-xl glass p-4 md:p-6">
         <div className="mb-5 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <Bell className="h-4 w-4 text-blue-400" />

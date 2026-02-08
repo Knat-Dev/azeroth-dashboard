@@ -48,7 +48,7 @@ function formatDuration(ms: number): string {
 
 function StatusDot({ state }: { state: string }) {
   if (state === "running")
-    return <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]" />;
+    return <div className="h-2 w-2 rounded-full bg-green-500 pulse-glow" />;
   if (["exited", "dead", "stopped", "unresponsive", "crashed"].includes(state))
     return <div className="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]" />;
   if (state === "restarting")
@@ -65,7 +65,7 @@ function ConfirmDialog({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg">
+      <div className="mx-4 w-full max-w-sm rounded-xl glass p-6 shadow-lg">
         <div className="mb-4 flex items-center gap-3">
           <div className="rounded-lg bg-yellow-500/10 p-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
@@ -105,7 +105,7 @@ export default function DashboardPage() {
 
       {/* Row 1: Health indicators */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200">
           <Server className="h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
@@ -120,7 +120,7 @@ export default function DashboardPage() {
           <StatusDot state={health?.worldserver.state ?? "unknown"} />
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200">
           <Server className="h-4 w-4 shrink-0 text-blue-400" />
           <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">Authserver</p>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
           <StatusDot state={health?.authserver.state ?? "unknown"} />
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200">
           <Radio className="h-4 w-4 shrink-0 text-emerald-400" />
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">SOAP</p>
@@ -140,7 +140,7 @@ export default function DashboardPage() {
           <StatusDot state={health?.soap.connected ? "running" : "exited"} />
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200">
           <Users className="h-4 w-4 shrink-0 text-violet-400" />
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">Players</p>
@@ -155,7 +155,7 @@ export default function DashboardPage() {
           <PlayerChart />
         </div>
 
-        <div className="flex flex-col rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col rounded-xl glass p-4">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Quick Actions
           </h2>
@@ -199,7 +199,7 @@ export default function DashboardPage() {
       <DistributionCharts />
 
       {/* Row 4: Recent Events */}
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className="rounded-xl glass p-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="h-3.5 w-3.5 text-muted-foreground" />
