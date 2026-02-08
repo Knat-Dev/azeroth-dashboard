@@ -114,6 +114,12 @@ export class ItemTemplate {
   @Column({ type: 'int', unsigned: true, name: 'SellPrice', default: 0 })
   sellPrice!: number;
 
+  @Column({ type: 'smallint', name: 'ScalingStatDistribution', default: 0 })
+  scalingStatDistribution!: number;
+
+  @Column({ type: 'int', unsigned: true, name: 'ScalingStatValue', default: 0 })
+  scalingStatValue!: number;
+
   @Column({ type: 'varchar', length: 255, default: '' })
   description!: string;
 }

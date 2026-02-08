@@ -12,7 +12,7 @@ import {
   getFaction,
   getItemQualityColor,
 } from "@/lib/wow-constants";
-import type { PlayerDetail, ItemTooltipData } from "@repo/shared";
+import type { PlayerDetail, EquippedItemSlot } from "@repo/shared";
 import { ArrowLeft, Heart, Swords, Shield, Trophy, Clock, Coins, MapPin, Users } from "lucide-react";
 import { ItemTooltip } from "@/components/items/item-tooltip";
 
@@ -24,24 +24,13 @@ const EQUIPMENT_SLOTS = [
   "Bag 1", "Bag 2", "Bag 3", "Bag 4",
 ];
 
-function parseEquipmentCache(cache: string | null): { entry: number; enchant: number }[] {
-  if (!cache) return [];
-  const parts = cache.split(" ").map(Number);
-  const items: { entry: number; enchant: number }[] = [];
-  // Equipment cache format: entry1 enchant1 entry2 enchant2 ...
-  for (let i = 0; i < parts.length - 1; i += 2) {
-    items.push({ entry: parts[i] ?? 0, enchant: parts[i + 1] ?? 0 });
-  }
-  return items;
-}
-
 export default function PlayerDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [player, setPlayer] = useState<PlayerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [itemMap, setItemMap] = useState<Map<number, ItemTooltipData>>(new Map());
+  const [equipment, setEquipment] = useState<EquippedItemSlot[]>([]);
 
   useEffect(() => {
     const guid = params.guid;
@@ -51,19 +40,13 @@ export default function PlayerDetailPage() {
       .get<PlayerDetail>(`/server/players/${guid}`)
       .then((p) => {
         setPlayer(p);
-        // Fetch item data for equipment
-        const equipment = parseEquipmentCache(p.equipmentCache);
-        const entries = equipment.map((e) => e.entry).filter((e) => e > 0);
-        if (entries.length > 0) {
-          api
-            .post<ItemTooltipData[]>("/server/items/batch", { entries })
-            .then((items) => {
-              const map = new Map<number, ItemTooltipData>();
-              for (const item of items) map.set(item.entry, item);
-              setItemMap(map);
-            })
-            .catch(() => {}); // Silently fail — items just show as fallback
-        }
+        // Fetch real equipped items with suffix/scaling resolution
+        api
+          .get<EquippedItemSlot[]>(
+            `/server/players/${guid}/equipment?level=${p.level}`
+          )
+          .then((slots) => setEquipment(slots))
+          .catch(() => {}); // Silently fail — items just show as fallback
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -95,7 +78,7 @@ export default function PlayerDetailPage() {
   }
 
   const faction = getFaction(player.race);
-  const equipment = parseEquipmentCache(player.equipmentCache);
+  const hasEquipment = equipment.some((s) => s.item !== null);
 
   return (
     <div className="space-y-4">
@@ -257,41 +240,32 @@ export default function PlayerDetailPage() {
       </div>
 
       {/* Equipment */}
-      {equipment.length > 0 && (
+      {hasEquipment && (
         <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Equipment
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
-            {equipment.map((item, i) => {
-              const itemData = itemMap.get(item.entry);
-              return (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
-                >
-                  <span className="text-muted-foreground">{EQUIPMENT_SLOTS[i] ?? `Slot ${i}`}</span>
-                  {item.entry > 0 ? (
-                    itemData ? (
-                      <ItemTooltip item={itemData}>
-                        <span
-                          className="text-xs font-medium"
-                          style={{ color: getItemQualityColor(itemData.quality) }}
-                        >
-                          {itemData.name}
-                        </span>
-                      </ItemTooltip>
-                    ) : (
-                      <span className="font-mono text-xs text-foreground">
-                        Item #{item.entry}
-                      </span>
-                    )
-                  ) : (
-                    <span className="text-muted-foreground/50">Empty</span>
-                  )}
-                </div>
-              );
-            })}
+            {equipment.map((slot) => (
+              <div
+                key={slot.slot}
+                className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
+              >
+                <span className="text-muted-foreground">{EQUIPMENT_SLOTS[slot.slot] ?? `Slot ${slot.slot}`}</span>
+                {slot.item ? (
+                  <ItemTooltip item={slot.item}>
+                    <span
+                      className="text-xs font-medium"
+                      style={{ color: getItemQualityColor(slot.item.quality) }}
+                    >
+                      {slot.item.name}
+                    </span>
+                  </ItemTooltip>
+                ) : (
+                  <span className="text-muted-foreground/50">Empty</span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

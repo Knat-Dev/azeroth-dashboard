@@ -265,6 +265,7 @@ export interface ItemStat {
 export interface ItemTooltipData {
   entry: number;
   name: string;
+  suffixName: string;
   quality: number;
   itemLevel: number;
   itemClass: number;
@@ -283,4 +284,9 @@ export interface ItemTooltipData {
   allowableRace: number;
   sellPrice: number;
   description: string;
+}
+
+export interface EquippedItemSlot {
+  slot: number;
+  item: ItemTooltipData | null;
 }

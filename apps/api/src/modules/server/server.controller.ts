@@ -95,6 +95,19 @@ export class ServerController {
     );
   }
 
+  @ApiOperation({ summary: 'Get equipped items for a player' })
+  @Get('players/:guid/equipment')
+  @UseGuards(JwtAuthGuard)
+  getEquippedItems(
+    @Param('guid', ParseIntPipe) guid: number,
+    @Query('level') level?: string,
+  ) {
+    return this.serverService.getEquippedItems(
+      guid,
+      parseInt(level ?? '80', 10),
+    );
+  }
+
   @ApiOperation({ summary: 'Get player detail by GUID' })
   @Get('players/:guid')
   @UseGuards(JwtAuthGuard)

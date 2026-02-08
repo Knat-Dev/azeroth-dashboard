@@ -29,6 +29,9 @@ export class ItemInstance {
   @Column({ type: 'text', nullable: true })
   enchantments!: string | null;
 
+  @Column({ type: 'smallint', default: 0 })
+  randomPropertyId!: number;
+
   @Column({ type: 'int', default: 0 })
   durability!: number;
 }
