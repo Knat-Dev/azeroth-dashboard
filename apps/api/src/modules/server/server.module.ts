@@ -5,11 +5,13 @@ import { ServerService } from './server.service.js';
 import { MonitorModule } from '../monitor/monitor.module.js';
 import { Realmlist } from '../../entities/auth/realmlist.entity.js';
 import { Character } from '../../entities/characters/character.entity.js';
+import { Guild } from '../../entities/characters/guild.entity.js';
+import { GuildMember } from '../../entities/characters/guild-member.entity.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Realmlist], 'auth'),
-    TypeOrmModule.forFeature([Character], 'characters'),
+    TypeOrmModule.forFeature([Character, Guild, GuildMember], 'characters'),
     MonitorModule,
   ],
   controllers: [ServerController],

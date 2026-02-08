@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
+import { formatGold, formatPlaytime } from "@/lib/utils";
 import type { OnlinePlayer, PaginatedResponse } from "@repo/shared";
 import {
   getClassName,
@@ -166,7 +168,7 @@ export default function PlayersPage() {
         <>
           {/* Table — flex-1, only tbody scrolls */}
           <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
-            <table className="w-full min-w-[700px] text-sm">
+            <table className="w-full min-w-[900px] text-sm">
               <thead className="shrink-0">
                 <tr className="border-b border-border bg-secondary/50">
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -185,13 +187,22 @@ export default function PlayersPage() {
                     Faction
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Guild
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Gold
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Play Time
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Zone
                   </th>
                 </tr>
               </thead>
             </table>
             <div className="flex-1 overflow-y-auto">
-              <table className="w-full min-w-[700px] text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <tbody>
                   {players.map((player) => {
                     const faction = getFaction(player.race);
@@ -200,7 +211,14 @@ export default function PlayersPage() {
                         key={player.guid}
                         className="border-b border-border/50 last:border-0 text-sm text-foreground hover:bg-secondary/30 transition-colors"
                       >
-                        <td className="px-4 py-3 font-medium">{player.name}</td>
+                        <td className="px-4 py-3 font-medium">
+                          <Link
+                            href={`/players/${player.guid}`}
+                            className="text-primary hover:underline"
+                          >
+                            {player.name}
+                          </Link>
+                        </td>
                         <td className="px-4 py-3">{player.level}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -230,6 +248,15 @@ export default function PlayersPage() {
                           ) : (
                             <span className="text-muted-foreground">Unknown</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {player.guildName || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {player.money != null ? formatGold(player.money) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {player.totaltime != null ? formatPlaytime(player.totaltime) : "—"}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {getZoneName(player.zone)}

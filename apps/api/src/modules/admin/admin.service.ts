@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Account } from '../../entities/auth/account.entity.js';
 import { AccountAccess } from '../../entities/auth/account-access.entity.js';
 import { AccountBanned } from '../../entities/auth/account-banned.entity.js';
+import { IpBanned } from '../../entities/auth/ip-banned.entity.js';
 import { Character } from '../../entities/characters/character.entity.js';
 import { makeRegistrationData } from '../auth/srp6.util.js';
 
@@ -16,6 +17,8 @@ export class AdminService {
     private accountAccessRepo: Repository<AccountAccess>,
     @InjectRepository(AccountBanned, 'auth')
     private accountBannedRepo: Repository<AccountBanned>,
+    @InjectRepository(IpBanned, 'auth')
+    private ipBannedRepo: Repository<IpBanned>,
     @InjectRepository(Character, 'characters')
     private characterRepo: Repository<Character>,
   ) {}
@@ -222,5 +225,71 @@ export class AdminService {
     }));
 
     return { data, total, page, limit };
+  }
+
+  // --- IP Bans ---
+
+  async listIpBans(page = 1, limit = 20) {
+    const now = Math.floor(Date.now() / 1000);
+    const qb = this.ipBannedRepo
+      .createQueryBuilder('ib')
+      .where('ib.unbandate = 0 OR ib.unbandate > :now', { now });
+
+    const total = await qb.getCount();
+    const data = await qb
+      .orderBy('ib.bandate', 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getMany();
+
+    return {
+      data: data.map((b) => ({
+        ip: b.ip,
+        reason: b.banreason,
+        bannedBy: b.bannedby,
+        banDate: new Date(b.bandate * 1000).toISOString(),
+        unbanDate: b.unbandate === 0 ? null : new Date(b.unbandate * 1000).toISOString(),
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async createIpBan(
+    ip: string,
+    bannedBy: string,
+    reason: string,
+    duration: number,
+  ) {
+    const now = Math.floor(Date.now() / 1000);
+    const unbandate = duration > 0 ? now + duration : 0;
+
+    const ban = this.ipBannedRepo.create({
+      ip,
+      bandate: now,
+      unbandate,
+      bannedby: bannedBy,
+      banreason: reason,
+    });
+
+    await this.ipBannedRepo.save(ban);
+    return { message: 'IP banned' };
+  }
+
+  async removeIpBan(ip: string) {
+    await this.ipBannedRepo.delete({ ip });
+    return { message: 'IP unbanned' };
+  }
+
+  // --- Password Reset ---
+
+  async resetPassword(accountId: number, newPassword: string) {
+    const account = await this.accountRepo.findOneBy({ id: accountId });
+    if (!account) throw new NotFoundException('Account not found');
+
+    const { salt, verifier } = makeRegistrationData(account.username, newPassword);
+    await this.accountRepo.update(accountId, { salt, verifier });
+    return { message: 'Password reset successfully' };
   }
 }

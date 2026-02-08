@@ -1,17 +1,17 @@
 "use client";
 
-import { useDashboard } from "@/hooks/use-dashboard";
 import { PlayerChart } from "@/components/dashboard/player-chart";
+import { useDashboard } from "@/hooks/use-dashboard";
+import { parseUTC } from "@/lib/utils";
 import {
-  Server,
-  Users,
+  Activity,
+  AlertTriangle,
+  Clock,
   Radio,
   RefreshCw,
-  AlertTriangle,
-  Activity,
-  Clock,
+  Server,
+  Users,
 } from "lucide-react";
-import { parseUTC } from "@/lib/utils";
 
 function formatRelativeTime(timestamp: string): string {
   const diffMs = Date.now() - parseUTC(timestamp).getTime();
@@ -107,10 +107,14 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
           <Server className="h-4 w-4 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-muted-foreground">Worldserver</p>
-            {health?.worldserver.status && (
+            <p className="text-xs text-muted-foreground">
+              {health?.realmName && health.realmName !== "Unknown" ? health.realmName : "Worldserver"}
+            </p>
+            {health?.uptime ? (
+              <p className="truncate text-xs text-muted-foreground/70">Up: {health.uptime}</p>
+            ) : health?.worldserver.status ? (
               <p className="truncate text-xs text-muted-foreground/70">{health.worldserver.status}</p>
-            )}
+            ) : null}
           </div>
           <StatusDot state={health?.worldserver.state ?? "unknown"} />
         </div>

@@ -13,6 +13,7 @@ import { AdminModule } from './modules/admin/admin.module.js';
 import { DockerModule } from './modules/docker/docker.module.js';
 import { MonitorModule } from './modules/monitor/monitor.module.js';
 import { WebhookModule } from './modules/webhook/webhook.module.js';
+import { SetupModule } from './modules/setup/setup.module.js';
 
 // Auth DB entities
 import { Account } from './entities/auth/account.entity.js';
@@ -20,6 +21,7 @@ import { AccountAccess } from './entities/auth/account-access.entity.js';
 import { AccountBanned } from './entities/auth/account-banned.entity.js';
 import { Realmlist } from './entities/auth/realmlist.entity.js';
 import { Autobroadcast } from './entities/auth/autobroadcast.entity.js';
+import { IpBanned } from './entities/auth/ip-banned.entity.js';
 
 // Characters DB entities
 import { Character } from './entities/characters/character.entity.js';
@@ -59,6 +61,7 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
           AccountBanned,
           Realmlist,
           Autobroadcast,
+          IpBanned,
         ],
         synchronize: false,
       }),
@@ -113,6 +116,7 @@ import { ItemTemplate } from './entities/world/item-template.entity.js';
     DockerModule,
     MonitorModule,
     WebhookModule,
+    SetupModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard } satisfies Provider,

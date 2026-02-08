@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "@/lib/api";
 import { useToast } from "@/providers/toast-provider";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   crashLoopWindow: "300000",
   discordWebhookUrl: "",
   webhookEvents: "crash,restart_failed,crash_loop,backup_success,backup_failed",
+  faction_theme: "neutral",
 };
 
 export function msToSeconds(ms: string | undefined): string {
@@ -31,15 +32,15 @@ export function secondsToMs(seconds: string): string {
 
 export function useSettings() {
   const [settings, setSettings] = useState<Record<string, string>>(DEFAULT_SETTINGS);
+  const [originalSettings, setOriginalSettings] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testingSending, setTestingSending] = useState(false);
   const { toast } = useToast();
-  const originalSettingsRef = useRef<string>("");
 
   const isDirty = useMemo(
-    () => !loading && JSON.stringify(settings) !== originalSettingsRef.current,
-    [settings, loading],
+    () => !loading && JSON.stringify(settings) !== originalSettings,
+    [settings, loading, originalSettings],
   );
 
   useUnsavedChanges(isDirty);
@@ -50,7 +51,7 @@ export function useSettings() {
       const data = await api.get<Record<string, string>>("/admin/settings");
       const merged = { ...DEFAULT_SETTINGS, ...data };
       setSettings(merged);
-      originalSettingsRef.current = JSON.stringify(merged);
+      setOriginalSettings(JSON.stringify(merged));
     } catch (e) {
       toast("error", e instanceof Error ? e.message : "Failed to load settings");
     } finally {
@@ -104,20 +105,22 @@ export function useSettings() {
     return null;
   }
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     const validationError = validateSettings();
     if (validationError) {
       toast("error", validationError);
-      return;
+      return false;
     }
 
     setSaving(true);
     try {
       await api.put("/admin/settings", settings);
-      originalSettingsRef.current = JSON.stringify(settings);
+      setOriginalSettings(JSON.stringify(settings));
       toast("success", "Settings saved successfully");
+      return true;
     } catch (e) {
       toast("error", e instanceof Error ? e.message : "Failed to save settings");
+      return false;
     } finally {
       setSaving(false);
     }

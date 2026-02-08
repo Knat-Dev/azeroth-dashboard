@@ -183,4 +183,59 @@ export class AdminController {
   testWebhook() {
     return this.webhookService.sendTestNotification();
   }
+
+  // --- IP Bans ---
+
+  @ApiOperation({ summary: 'List active IP bans' })
+  @Get('ip-bans')
+  listIpBans(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminService.listIpBans(
+      parseInt(page ?? '1', 10),
+      parseInt(limit ?? '20', 10),
+    );
+  }
+
+  @ApiOperation({ summary: 'Ban an IP address' })
+  @Post('ip-bans')
+  async createIpBan(
+    @CurrentUser() user: { username: string },
+    @Body() body: { ip: string; reason: string; duration: number },
+  ) {
+    const result = await this.adminService.createIpBan(
+      body.ip,
+      user.username,
+      body.reason,
+      body.duration,
+    );
+    this.eventService.logEvent('dashboard', 'ip_banned', `Banned IP ${body.ip}: ${body.reason}`, undefined, user.username);
+    return result;
+  }
+
+  @ApiOperation({ summary: 'Remove an IP ban' })
+  @Delete('ip-bans/:ip')
+  async removeIpBan(
+    @CurrentUser() user: { username: string },
+    @Param('ip') ip: string,
+  ) {
+    const result = await this.adminService.removeIpBan(ip);
+    this.eventService.logEvent('dashboard', 'ip_unbanned', `Unbanned IP ${ip}`, undefined, user.username);
+    return result;
+  }
+
+  // --- Password Reset ---
+
+  @ApiOperation({ summary: 'Reset account password' })
+  @Put('accounts/:id/password')
+  async resetPassword(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { username: string },
+    @Body() body: { password: string },
+  ) {
+    const result = await this.adminService.resetPassword(id, body.password);
+    this.eventService.logEvent('dashboard', 'password_reset', `Reset password for account #${id}`, undefined, user.username);
+    return result;
+  }
 }

@@ -158,6 +158,8 @@ export interface HealthState {
   soap: { connected: boolean; degraded?: boolean };
   players: { online: number };
   lastUpdated: string;
+  uptime?: string;
+  realmName?: string;
 }
 
 export interface ServerEvent {
@@ -178,6 +180,45 @@ export interface OnlinePlayer {
   gender: number;
   zone: number;
   map: number;
+  money?: number;
+  totaltime?: number;
+  guildName?: string;
+}
+
+export interface PlayerDetail {
+  guid: number;
+  name: string;
+  level: number;
+  class: number;
+  race: number;
+  gender: number;
+  zone: number;
+  map: number;
+  money: number;
+  totaltime: number;
+  totalKills: number;
+  arenaPoints: number;
+  totalHonorPoints: number;
+  health: number;
+  power1: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  account: number;
+  online: number;
+  equipmentCache: string | null;
+  guildName: string | null;
+  guildRank: number | null;
+}
+
+export interface DistributionEntry {
+  id: number;
+  count: number;
+}
+
+export interface DistributionData {
+  classes: DistributionEntry[];
+  races: DistributionEntry[];
 }
 
 export interface BanEntry {

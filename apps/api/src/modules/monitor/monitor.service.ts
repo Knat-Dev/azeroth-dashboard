@@ -195,6 +195,14 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
       this.processStateChange('ac-authserver', authState.state);
       this.processSoapHealth(soapOk);
 
+      // Fetch realm name
+      let realmName: string | undefined;
+      try {
+        realmName = await this.serverService.getRealmName();
+      } catch {
+        // ignore
+      }
+
       // Update cached health
       this.cachedHealth = {
         worldserver: {
@@ -213,6 +221,8 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
         },
         players: { online: onlineCount },
         lastUpdated: new Date().toISOString(),
+        uptime: this.lastSoapUptime || undefined,
+        realmName,
       };
     } catch (err) {
       this.logger.error(`Health poll failed: ${err}`);
@@ -440,6 +450,8 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private lastSoapUptime: string = '';
+
   private async checkSoap(): Promise<boolean> {
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -450,6 +462,16 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
       );
       const soapPromise = this.soapService.executeCommand('.server info');
       const result = await Promise.race([soapPromise, timeoutPromise]);
+      if (result.success && result.message) {
+        // Parse uptime from .server info response
+        // e.g. "AzerothCore ... Uptime: 1 Day(s) 3 Hour(s) 25 Minute(s) 10 Second(s)"
+        const uptimeMatch = result.message.match(
+          /Uptime:\s*(.+?)(?:\.|$)/i,
+        );
+        if (uptimeMatch) {
+          this.lastSoapUptime = uptimeMatch[1].trim();
+        }
+      }
       return result.success;
     } catch {
       return false;

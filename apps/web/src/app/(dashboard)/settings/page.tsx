@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { useSettings, msToSeconds, secondsToMs } from "@/hooks/use-settings";
-import { Settings, Save, RefreshCw, Bell, Send } from "lucide-react";
+import { useTheme } from "@/providers/theme-provider";
+import { Settings, Save, RefreshCw, Bell, Send, Palette } from "lucide-react";
 
 const WEBHOOK_EVENT_OPTIONS = [
   { value: "crash", label: "Server Crash" },
@@ -11,11 +13,57 @@ const WEBHOOK_EVENT_OPTIONS = [
   { value: "backup_failed", label: "Backup Failed" },
 ];
 
+const FACTION_OPTIONS = [
+  {
+    value: "neutral" as const,
+    label: "Neutral",
+    color: "#f5a623",
+    desc: "Default gold theme",
+  },
+  {
+    value: "alliance" as const,
+    label: "Alliance",
+    color: "#1A6BC4",
+    desc: "For the Alliance!",
+  },
+  {
+    value: "horde" as const,
+    label: "Horde",
+    color: "#9B1B1B",
+    desc: "For the Horde!",
+  },
+];
+
 export default function SettingsPage() {
   const {
     settings, loading, saving, testingSending, isDirty,
     updateSetting, getWebhookEvents, toggleWebhookEvent, handleSave, handleTestWebhook,
   } = useSettings();
+  const { faction, setFaction, previewFaction } = useTheme();
+
+  // Track faction for preview-with-revert behaviour
+  const lastSavedFactionRef = useRef(faction);
+  const currentFactionRef = useRef(faction);
+  currentFactionRef.current = faction;
+
+  useEffect(() => {
+    lastSavedFactionRef.current = faction;
+    return () => {
+      // On unmount, revert to last-saved faction if unsaved preview is active
+      if (currentFactionRef.current !== lastSavedFactionRef.current) {
+        setFaction(lastSavedFactionRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSaveAll() {
+    const success = await handleSave();
+    if (success) {
+      setFaction(faction); // persist current preview to localStorage
+      lastSavedFactionRef.current = faction;
+    }
+  }
 
   const inputClasses =
     "w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring";
@@ -39,11 +87,78 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Configure auto-restart, crash loop protection, and webhooks
-        </p>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Configure auto-restart, crash loop protection, and webhooks
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {isDirty && (
+            <span className="text-xs text-yellow-400">Unsaved changes</span>
+          )}
+          <button
+            onClick={handleSaveAll}
+            disabled={saving || !isDirty}
+            className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Save Settings
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Faction Theme Section */}
+      <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="rounded-lg bg-secondary p-2">
+            <Palette className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Faction Theme
+            </h2>
+            <p className="text-xs text-muted-foreground/70">
+              Choose your faction to customize the dashboard colors
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {FACTION_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                previewFaction(opt.value);
+                updateSetting("faction_theme", opt.value);
+              }}
+              className={`flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${
+                faction === opt.value
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/30 hover:bg-secondary/50"
+              }`}
+            >
+              <div
+                className="h-8 w-8 shrink-0 rounded-full"
+                style={{ backgroundColor: opt.color }}
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">{opt.label}</p>
+                <p className="text-xs text-muted-foreground">{opt.desc}</p>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Auto-Restart Section */}
@@ -312,29 +427,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Save Button */}
-      <div className="flex items-center justify-end gap-3">
-        {isDirty && (
-          <span className="text-xs text-yellow-400">Unsaved changes</span>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={saving || !isDirty}
-          className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {saving ? (
-            <>
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4" />
-              Save Settings
-            </>
-          )}
-        </button>
-      </div>
     </div>
   );
 }

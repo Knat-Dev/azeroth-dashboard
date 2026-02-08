@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ServerService } from './server.service.js';
 import { MonitorService } from '../monitor/monitor.service.js';
@@ -87,5 +87,19 @@ export class ServerController {
       parseInt(limit ?? '20', 10),
       search,
     );
+  }
+
+  @ApiOperation({ summary: 'Get player detail by GUID' })
+  @Get('players/:guid')
+  @UseGuards(JwtAuthGuard)
+  getPlayerDetail(@Param('guid', ParseIntPipe) guid: number) {
+    return this.serverService.getPlayerDetail(guid);
+  }
+
+  @ApiOperation({ summary: 'Get class/race distribution' })
+  @Get('stats/distribution')
+  @UseGuards(JwtAuthGuard)
+  getDistribution() {
+    return this.serverService.getDistribution();
   }
 }

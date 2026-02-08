@@ -27,6 +27,14 @@ export function useAccounts() {
   const [banDuration, setBanDuration] = useState("");
   const [showBanModal, setShowBanModal] = useState(false);
 
+  // Password reset modal state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetId, setResetId] = useState<number | null>(null);
+  const [resetPassword, setResetPasswordVal] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
+
   // Create account modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createUsername, setCreateUsername] = useState("");
@@ -147,6 +155,47 @@ export function useAccounts() {
       });
   }
 
+  function openResetModal(accountId: number) {
+    setResetId(accountId);
+    setResetPasswordVal("");
+    setResetConfirm("");
+    setResetError("");
+    setShowResetModal(true);
+  }
+
+  function closeResetModal() {
+    setShowResetModal(false);
+    setResetId(null);
+    setResetPasswordVal("");
+    setResetConfirm("");
+    setResetError("");
+    setResetLoading(false);
+  }
+
+  function handleResetPassword() {
+    if (!resetId || !resetPassword.trim()) return;
+    if (resetPassword !== resetConfirm) {
+      setResetError("Passwords do not match");
+      return;
+    }
+    if (resetPassword.length < 6 || resetPassword.length > 16) {
+      setResetError("Password must be between 6 and 16 characters");
+      return;
+    }
+    setResetLoading(true);
+    setResetError("");
+    api
+      .put(`/admin/accounts/${resetId}/password`, { password: resetPassword })
+      .then(() => {
+        closeResetModal();
+        toast("success", "Password reset successfully");
+      })
+      .catch((e) => {
+        setResetError(e.message);
+        setResetLoading(false);
+      });
+  }
+
   return {
     // List state
     accounts,
@@ -169,6 +218,19 @@ export function useAccounts() {
     openBanModal,
     closeBanModal,
     handleBan,
+
+    // Reset password modal
+    showResetModal,
+    resetId,
+    resetPassword,
+    setResetPasswordVal,
+    resetConfirm,
+    setResetConfirm,
+    resetLoading,
+    resetError,
+    openResetModal,
+    closeResetModal,
+    handleResetPassword,
 
     // Create modal
     showCreateModal,

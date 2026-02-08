@@ -2,7 +2,8 @@
 
 import { useAuth } from "@/providers/auth-provider";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { API_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -11,6 +12,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+
+  // Check if setup is needed — redirect before showing login
+  useEffect(() => {
+    const cached = sessionStorage.getItem("setupComplete");
+    if (cached === "true") return;
+
+    fetch(`${API_URL}/setup/status`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.needsSetup) {
+          router.push("/setup");
+        } else {
+          sessionStorage.setItem("setupComplete", "true");
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

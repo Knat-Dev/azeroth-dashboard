@@ -2,13 +2,15 @@
 
 import { useAccounts } from "@/hooks/use-accounts";
 import { formatDate } from "@/lib/utils";
-import { UserCog, Plus, Search } from "lucide-react";
+import { UserCog, Plus, Search, KeyRound } from "lucide-react";
 
 export default function AccountsPage() {
   const {
     accounts, page, totalPages, total, loading, error, search, setSearch, fetchAccounts,
     showBanModal, banningId, banReason, setBanReason, banDuration, setBanDuration,
     openBanModal, closeBanModal, handleBan,
+    showResetModal, resetId, resetPassword, setResetPasswordVal, resetConfirm, setResetConfirm,
+    resetLoading, resetError, openResetModal, closeResetModal, handleResetPassword,
     showCreateModal, createUsername, setCreateUsername, createPassword, setCreatePassword,
     createEmail, setCreateEmail, createGmLevel, setCreateGmLevel, createLoading,
     createError, openCreateModal, closeCreateModal, handleCreate,
@@ -102,12 +104,21 @@ export default function AccountsPage() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{formatDate(account.lastLogin, "Never")}</td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => openBanModal(account.id)}
-                          className="rounded-lg bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors"
-                        >
-                          Ban
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openResetModal(account.id)}
+                            className="rounded-lg bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+                          >
+                            <KeyRound className="inline h-3 w-3 mr-1" />
+                            Reset PW
+                          </button>
+                          <button
+                            onClick={() => openBanModal(account.id)}
+                            className="rounded-lg bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive hover:bg-destructive/20 transition-colors"
+                          >
+                            Ban
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -188,6 +199,71 @@ export default function AccountsPage() {
                 className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
               >
                 Confirm Ban
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+            <h3 className="mb-4 text-lg font-semibold text-foreground">
+              Reset Password — Account #{resetId}
+            </h3>
+
+            {resetError && (
+              <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {resetError}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  New Password <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPasswordVal(e.target.value)}
+                  maxLength={16}
+                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Enter new password"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  Confirm Password <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={resetConfirm}
+                  onChange={(e) => setResetConfirm(e.target.value)}
+                  maxLength={16}
+                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Confirm new password"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Password must be between 6 and 16 characters
+              </p>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={closeResetModal}
+                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetPassword}
+                disabled={!resetPassword.trim() || !resetConfirm.trim() || resetLoading}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {resetLoading ? "Resetting..." : "Reset Password"}
               </button>
             </div>
           </div>

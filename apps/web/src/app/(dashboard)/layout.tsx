@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { Sidebar } from "@/components/layout/sidebar";
 import { HealthBar } from "@/components/layout/health-bar";
+import { API_URL } from "@/lib/api";
 
 export default function DashboardLayout({
   children,
@@ -42,6 +43,23 @@ export default function DashboardLayout({
       return next;
     });
   }, []);
+
+  // Check if first-run setup is needed before checking auth
+  useEffect(() => {
+    const cached = sessionStorage.getItem("setupComplete");
+    if (cached === "true") return;
+
+    fetch(`${API_URL}/setup/status`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.needsSetup) {
+          router.push("/setup");
+        } else {
+          sessionStorage.setItem("setupComplete", "true");
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   useEffect(() => {
     if (!loading && !user) {

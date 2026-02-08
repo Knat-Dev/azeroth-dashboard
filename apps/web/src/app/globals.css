@@ -71,6 +71,29 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Faction themes — applied alongside dark/light class on <html> */
+html.faction-alliance {
+  --color-primary: #1A6BC4;
+  --color-ring: #1A6BC4;
+  --color-accent: #C4A33A;
+}
+html.light.faction-alliance {
+  --color-primary: #2563EB;
+  --color-ring: #2563EB;
+  --color-accent: #A88B2A;
+}
+html.faction-horde {
+  --color-primary: #9B1B1B;
+  --color-ring: #9B1B1B;
+  --color-accent: #D4722A;
+}
+html.light.faction-horde {
+  --color-primary: #B91C1C;
+  --color-ring: #B91C1C;
+  --color-accent: #C2631E;
+}
+/* faction-neutral uses the default gold #f5a623 — no overrides needed */
+
 .container {
   padding: 25px;
 }
