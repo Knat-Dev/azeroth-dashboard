@@ -183,6 +183,24 @@ export class ServerService {
     return { data, total, page, limit };
   }
 
+  /** Resolve a player identifier (numeric guid or character name) to a guid */
+  async resolvePlayerGuid(identifier: string): Promise<number> {
+    const asNum = parseInt(identifier, 10);
+    if (!isNaN(asNum) && String(asNum) === identifier) {
+      return asNum;
+    }
+    // Lookup by name (case-insensitive)
+    const character = await this.characterRepo
+      .createQueryBuilder('c')
+      .select('c.guid')
+      .where('LOWER(c.name) = LOWER(:name)', { name: identifier })
+      .getOne();
+    if (!character) {
+      throw new NotFoundException('Character not found');
+    }
+    return character.guid;
+  }
+
   async getPlayerDetail(guid: number) {
     const character = await this.characterRepo.findOne({ where: { guid } });
     if (!character) {

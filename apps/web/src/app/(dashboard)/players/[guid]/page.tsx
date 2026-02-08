@@ -33,16 +33,17 @@ export default function PlayerDetailPage() {
   const [equipment, setEquipment] = useState<EquippedItemSlot[]>([]);
 
   useEffect(() => {
-    const guid = params.guid;
-    if (!guid) return;
+    const id = params.guid;
+    if (!id) return;
 
     api
-      .get<PlayerDetail>(`/server/players/${guid}`)
+      .get<PlayerDetail>(`/server/players/${id}`)
       .then((p) => {
         setPlayer(p);
+        // Use resolved numeric guid for equipment call
         api
           .get<EquippedItemSlot[]>(
-            `/server/players/${guid}/equipment?level=${p.level}`
+            `/server/players/${p.guid}/equipment?level=${p.level}`
           )
           .then((slots) => setEquipment(slots))
           .catch(() => {});

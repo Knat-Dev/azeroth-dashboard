@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ServerService } from './server.service.js';
@@ -96,22 +95,24 @@ export class ServerController {
   }
 
   @ApiOperation({ summary: 'Get equipped items for a player' })
-  @Get('players/:guid/equipment')
+  @Get('players/:id/equipment')
   @UseGuards(JwtAuthGuard)
-  getEquippedItems(
-    @Param('guid', ParseIntPipe) guid: number,
+  async getEquippedItems(
+    @Param('id') id: string,
     @Query('level') level?: string,
   ) {
+    const guid = await this.serverService.resolvePlayerGuid(id);
     return this.serverService.getEquippedItems(
       guid,
       parseInt(level ?? '80', 10),
     );
   }
 
-  @ApiOperation({ summary: 'Get player detail by GUID' })
-  @Get('players/:guid')
+  @ApiOperation({ summary: 'Get player detail by GUID or name' })
+  @Get('players/:id')
   @UseGuards(JwtAuthGuard)
-  getPlayerDetail(@Param('guid', ParseIntPipe) guid: number) {
+  async getPlayerDetail(@Param('id') id: string) {
+    const guid = await this.serverService.resolvePlayerGuid(id);
     return this.serverService.getPlayerDetail(guid);
   }
 
