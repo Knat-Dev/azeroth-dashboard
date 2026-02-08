@@ -120,6 +120,7 @@ export function useConsole(toHtml: (raw: string) => string) {
       if (disposed) return;
       cleanup();
       setError("");
+      setAutoScroll(true);
 
       const token = getStoredToken();
       if (!token) {

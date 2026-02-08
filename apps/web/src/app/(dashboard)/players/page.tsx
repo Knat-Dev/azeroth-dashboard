@@ -119,6 +119,9 @@ export default function PlayersPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            Last updated: {secondsAgo}s ago
+          </span>
           <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -128,9 +131,6 @@ export default function PlayersPage() {
               onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
-          <span className="text-xs text-muted-foreground">
-            Last updated: {secondsAgo}s ago
-          </span>
           <button
             onClick={() => fetchPlayers(page, true)}
             disabled={refreshing}
