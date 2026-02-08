@@ -21,9 +21,18 @@ export function formatPlaytime(seconds: number) {
   return `${minutes}m`;
 }
 
+/** Parse a timestamp string from the API as UTC (SQLite omits the Z suffix). */
+export function parseUTC(timestamp: string): Date {
+  const s = timestamp.trim();
+  // Already has timezone info — parse as-is
+  if (s.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(s)) return new Date(s);
+  // Append Z so JS treats it as UTC instead of local time
+  return new Date(s.includes("T") ? s + "Z" : s.replace(" ", "T") + "Z");
+}
+
 export function formatDate(dateStr: string, fallback = "N/A") {
   if (!dateStr) return fallback;
-  const d = new Date(dateStr);
+  const d = parseUTC(dateStr);
   return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",

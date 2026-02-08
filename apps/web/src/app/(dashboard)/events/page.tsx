@@ -5,11 +5,12 @@ import { api } from "@/lib/api";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { ServerEvent, PaginatedResponse } from "@repo/shared";
 import { Activity, Search, Clock } from "lucide-react";
+import { parseUTC } from "@/lib/utils";
 
 const LIMIT = 25;
 
 function formatRelativeTime(timestamp: string): string {
-  const diffMs = Date.now() - new Date(timestamp).getTime();
+  const diffMs = Date.now() - parseUTC(timestamp).getTime();
   const diffSec = Math.floor(diffMs / 1000);
   if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.floor(diffSec / 60);
@@ -20,7 +21,7 @@ function formatRelativeTime(timestamp: string): string {
 }
 
 function formatTimestamp(timestamp: string): string {
-  const d = new Date(timestamp);
+  const d = parseUTC(timestamp);
   return d.toLocaleString(undefined, {
     month: "short",
     day: "numeric",

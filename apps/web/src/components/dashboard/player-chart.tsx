@@ -5,6 +5,7 @@ import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import type { PlayerHistoryPoint } from "@repo/shared";
 import { api } from "@/lib/api";
+import { parseUTC } from "@/lib/utils";
 
 const RANGES = ["24h", "7d", "30d"] as const;
 type Range = typeof RANGES[number];
@@ -96,7 +97,7 @@ export function PlayerChart() {
       {
         type: "areaspline",
         name: "Players",
-        data: data.map((p) => [new Date(p.timestamp).getTime(), p.count]),
+        data: data.map((p) => [parseUTC(p.timestamp).getTime(), p.count]),
       },
     ],
   };

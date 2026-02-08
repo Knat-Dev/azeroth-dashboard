@@ -11,9 +11,10 @@ import {
   Activity,
   Clock,
 } from "lucide-react";
+import { parseUTC } from "@/lib/utils";
 
 function formatRelativeTime(timestamp: string): string {
-  const diffMs = Date.now() - new Date(timestamp).getTime();
+  const diffMs = Date.now() - parseUTC(timestamp).getTime();
   const diffSec = Math.floor(diffMs / 1000);
   if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.floor(diffSec / 60);
