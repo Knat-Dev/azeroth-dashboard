@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { ItemTooltip } from "@/components/items/item-tooltip";
 import { api } from "@/lib/api";
 import { formatGold, formatPlaytime } from "@/lib/utils";
 import {
-  getClassName,
   getClassColor,
-  getRaceName,
-  getZoneName,
+  getClassName,
   getFaction,
   getItemQualityColor,
+  getRaceName,
+  getZoneName,
 } from "@/lib/wow-constants";
-import type { PlayerDetail, EquippedItemSlot } from "@repo/shared";
-import { ArrowLeft, Heart, Swords, Shield, Trophy, Clock, Coins, MapPin, Users } from "lucide-react";
-import { ItemTooltip } from "@/components/items/item-tooltip";
+import type { EquippedItemSlot, PlayerDetail } from "@repo/shared";
+import { ArrowLeft, Clock, Coins, Heart, Info, MapPin, Shield, Swords, Trophy, Users } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const EQUIPMENT_SLOTS = [
   "Head", "Neck", "Shoulders", "Body", "Chest",
@@ -40,13 +40,12 @@ export default function PlayerDetailPage() {
       .get<PlayerDetail>(`/server/players/${guid}`)
       .then((p) => {
         setPlayer(p);
-        // Fetch real equipped items with suffix/scaling resolution
         api
           .get<EquippedItemSlot[]>(
             `/server/players/${guid}/equipment?level=${p.level}`
           )
           .then((slots) => setEquipment(slots))
-          .catch(() => {}); // Silently fail — items just show as fallback
+          .catch(() => {});
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -242,9 +241,17 @@ export default function PlayerDetailPage() {
       {/* Equipment */}
       {hasEquipment && (
         <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Equipment
-          </h3>
+          <div className="mb-3 flex items-center gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Equipment
+            </h3>
+            {player.online === 1 && (
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                <Info className="h-3 w-3" />
+                Updates on logout or server save
+              </span>
+            )}
+          </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {equipment.map((slot) => (
               <div
