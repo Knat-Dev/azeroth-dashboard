@@ -18,7 +18,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_URL=http://localhost:7781/api
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-RUN pnpm --filter web build
+RUN pnpm --filter @repo/shared build && pnpm --filter web build
 
 FROM base AS runner
 WORKDIR /app

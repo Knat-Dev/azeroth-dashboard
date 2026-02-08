@@ -16,7 +16,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app ./
 COPY . .
-RUN pnpm --filter api build
+RUN pnpm --filter @repo/shared build && pnpm --filter api build
 # pnpm deploy creates a standalone copy with real node_modules (no symlinks)
 RUN pnpm --filter api deploy /app/deployed --prod
 
