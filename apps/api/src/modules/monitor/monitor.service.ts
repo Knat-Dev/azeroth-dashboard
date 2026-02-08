@@ -20,6 +20,17 @@ const POLL_INTERVAL_MS = 5000;
 const SOAP_TIMEOUT_MS = parseInt(process.env.SOAP_TIMEOUT_MS ?? '5000', 10);
 const PLAYER_RECORD_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const LOG_TAIL_LINES = 30;
+
+const CRASH_PATTERNS = [
+  />> ABORTED/i,
+  /segmentation fault/i,
+  /SEGFAULT/i,
+  /SIGABRT/i,
+  /signal 6/i,
+  /signal 11/i,
+  /core dumped/i,
+];
 
 const CONTAINERS = ['ac-worldserver', 'ac-authserver'] as const;
 type ContainerName = (typeof CONTAINERS)[number];
@@ -191,9 +202,24 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
         this.serverService.getOnlineCount(),
       ]);
 
-      // Process state changes
-      this.processStateChange('ac-worldserver', worldState.state);
-      this.processStateChange('ac-authserver', authState.state);
+      // Check container logs for crash signatures when Docker says "running"
+      const [worldCrashed, authCrashed] = await Promise.all([
+        worldState.state === 'running'
+          ? this.checkLogsForCrash('ac-worldserver')
+          : false,
+        authState.state === 'running'
+          ? this.checkLogsForCrash('ac-authserver')
+          : false,
+      ]);
+
+      // Use effective state: if Docker says running but logs show crash,
+      // the process is crash-looping inside the container
+      const worldEffective = worldCrashed ? 'crashed' : worldState.state;
+      const authEffective = authCrashed ? 'crashed' : authState.state;
+
+      // Process state changes using effective state
+      this.processStateChange('ac-worldserver', worldEffective);
+      this.processStateChange('ac-authserver', authEffective);
       this.processSoapHealth(soapOk);
 
       // Fetch realm name
@@ -204,16 +230,15 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
         // ignore
       }
 
-      // Update cached health
       this.cachedHealth = {
         worldserver: {
-          state: worldState.state,
-          status: worldState.status,
+          state: worldEffective,
+          status: worldCrashed ? 'Crashed (check logs)' : worldState.status,
           crashLoop: this.trackers['ac-worldserver'].crashLoopActive,
         },
         authserver: {
-          state: authState.state,
-          status: authState.status,
+          state: authEffective,
+          status: authCrashed ? 'Crashed (check logs)' : authState.status,
           crashLoop: this.trackers['ac-authserver'].crashLoopActive,
         },
         soap: {
@@ -448,6 +473,23 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
           'SOAP interface failed 3 consecutive checks',
         );
       }
+    }
+  }
+
+  /**
+   * Read the last N lines of a container's logs and check for crash
+   * signatures (ABORTED, SEGFAULT, etc.). This catches the case where
+   * Docker says "running" but the process is crash-looping inside.
+   */
+  private async checkLogsForCrash(container: string): Promise<boolean> {
+    try {
+      const buf = await this.dockerService.dockerRequest(
+        `/v1.45/containers/${container}/logs?stdout=1&stderr=1&tail=${LOG_TAIL_LINES}`,
+      );
+      const logs = this.dockerService.stripMultiplexedHeaders(buf);
+      return CRASH_PATTERNS.some((pattern) => pattern.test(logs));
+    } catch {
+      return false;
     }
   }
 

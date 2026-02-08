@@ -19,7 +19,7 @@ function StatusDot({ state }: { state: "running" | "stopped" | "restarting" | "u
 function mapState(state: string): "running" | "stopped" | "restarting" | "unknown" {
   if (state === "running") return "running";
   if (state === "restarting") return "restarting";
-  if (["exited", "dead", "stopped"].includes(state)) return "stopped";
+  if (["exited", "dead", "stopped", "unresponsive", "crashed"].includes(state)) return "stopped";
   return "unknown";
 }
 
