@@ -1,5 +1,16 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:7791/api";
 
+/** Matches bare datetime strings like "2025-02-08 15:30:45" or "2025-02-08T15:30:45" (no Z / offset). */
+const BARE_DATETIME = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/;
+
+/** JSON.parse reviver: marks timezone-naive datetimes as UTC so new Date() works correctly. */
+function timestampReviver(_key: string, value: unknown): unknown {
+  if (typeof value === "string" && BARE_DATETIME.test(value)) {
+    return value.replace(" ", "T") + "Z";
+  }
+  return value;
+}
+
 class ApiClient {
   private token: string | null = null;
   private onUnauthorized: (() => void) | null = null;
@@ -36,7 +47,10 @@ class ApiClient {
     }
 
     if (res.status === 204) return undefined as T;
-    return res.json();
+    // Parse with a reviver that appends 'Z' to bare UTC timestamps from SQLite
+    // so new Date() throughout the app always interprets them as UTC.
+    const text = await res.text();
+    return JSON.parse(text, timestampReviver);
   }
 
   get<T>(path: string, options?: { signal?: AbortSignal }) {

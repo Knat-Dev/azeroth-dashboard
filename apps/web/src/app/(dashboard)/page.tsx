@@ -213,7 +213,7 @@ export default function DashboardPage() {
           <div className="divide-y divide-border">
             {events.map((event) => (
               <div key={event.id} className="flex items-center gap-3 py-1.5 text-xs">
-                <span className="flex items-center gap-1 text-muted-foreground shrink-0 w-14">
+                <span className="flex items-center gap-1 text-muted-foreground shrink-0 w-16 whitespace-nowrap">
                   <Clock className="h-3 w-3" />
                   {formatRelativeTime(event.timestamp)}
                 </span>
