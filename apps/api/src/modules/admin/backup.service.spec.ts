@@ -1,16 +1,22 @@
 import { BadRequestException } from '@nestjs/common';
+import { EventEmitter } from 'events';
 import { BackupService, BackupScheduleConfig } from './backup.service';
 import { createMockConfigService } from '../../shared/test-utils';
 
 // Use var so the factory closures can reference them (var is hoisted, const/let are not)
 /* eslint-disable no-var */
-var mockExecAsync: jest.Mock;
+var mockSpawn: jest.Mock;
 var mockFsPromises: Record<string, jest.Mock>;
+var mockCreateWriteStream: jest.Mock;
 /* eslint-enable no-var */
 
-jest.mock('child_process', () => ({ exec: jest.fn() }));
+jest.mock('child_process', () => {
+  mockSpawn = jest.fn();
+  return { spawn: mockSpawn };
+});
 
 jest.mock('fs', () => {
+  const actual = jest.requireActual('fs');
   mockFsPromises = {
     mkdir: jest.fn().mockResolvedValue(undefined),
     stat: jest.fn(),
@@ -19,14 +25,53 @@ jest.mock('fs', () => {
     readFile: jest.fn(),
     writeFile: jest.fn().mockResolvedValue(undefined),
   };
-  return { promises: mockFsPromises };
+  mockCreateWriteStream = jest.fn();
+  return { ...actual, promises: mockFsPromises, createWriteStream: mockCreateWriteStream };
 });
 
-jest.mock('util', () => {
-  mockExecAsync = jest.fn();
-  const actual = jest.requireActual('util');
-  return { ...actual, promisify: jest.fn(() => mockExecAsync) };
-});
+/** Create a mock ChildProcess with EventEmitter semantics */
+function createMockProcess(exitCode = 0) {
+  const proc = Object.assign(new EventEmitter(), {
+    stdout: Object.assign(new EventEmitter(), { pipe: jest.fn() }),
+    stderr: Object.assign(new EventEmitter(), {}),
+    stdin: new EventEmitter(),
+    exitCode,
+    kill: jest.fn(),
+  });
+  proc.stdout.pipe.mockImplementation((dest: any) => dest);
+  return proc;
+}
+
+/** Create a mock writable stream with EventEmitter semantics */
+function createMockWriteStream() {
+  return Object.assign(new EventEmitter(), {
+    write: jest.fn(),
+    end: jest.fn(),
+  });
+}
+
+/**
+ * Set up spawn mocks for a single execMysqldump call.
+ * Schedules either a 'finish' (success) or 'error' (failure) on next tick.
+ */
+function setupSpawnMocks(options: { error?: Error; exitCode?: number } = {}) {
+  const dumpProc = createMockProcess(options.exitCode ?? 0);
+  const gzipProc = createMockProcess(0);
+  const outStream = createMockWriteStream();
+
+  mockSpawn.mockReturnValueOnce(dumpProc).mockReturnValueOnce(gzipProc);
+  mockCreateWriteStream.mockReturnValue(outStream);
+
+  process.nextTick(() => {
+    if (options.error) {
+      dumpProc.emit('error', options.error);
+    } else {
+      outStream.emit('finish');
+    }
+  });
+
+  return { dumpProc, gzipProc, outStream };
+}
 
 describe('BackupService', () => {
   let service: BackupService;
@@ -97,8 +142,8 @@ describe('BackupService', () => {
   });
 
   describe('triggerBackup', () => {
-    it('should execute mysqldump and return success for valid databases', async () => {
-      mockExecAsync.mockResolvedValue({ stdout: '', stderr: '' });
+    it('should execute mysqldump via spawn and return success', async () => {
+      setupSpawnMocks();
       mockFsPromises.stat.mockResolvedValue({ size: 5000 });
       mockFsPromises.readdir.mockResolvedValue([]);
 
@@ -108,6 +153,11 @@ describe('BackupService', () => {
       expect(results[0].success).toBe(true);
       expect(results[0].database).toBe('acore_auth');
       expect(results[0].size).toBe(5000);
+      expect(mockSpawn).toHaveBeenCalledWith(
+        'mysqldump',
+        expect.arrayContaining(['-h', 'localhost']),
+      );
+      expect(mockSpawn).toHaveBeenCalledWith('gzip');
     });
 
     it('should throw BadRequestException for invalid database name', async () => {
@@ -117,7 +167,7 @@ describe('BackupService', () => {
     });
 
     it('should report failure and clean up when file is too small', async () => {
-      mockExecAsync.mockResolvedValue({ stdout: '', stderr: '' });
+      setupSpawnMocks();
       mockFsPromises.stat.mockResolvedValue({ size: 50 });
       mockFsPromises.readdir.mockResolvedValue([]);
 
@@ -127,8 +177,8 @@ describe('BackupService', () => {
       expect(mockFsPromises.unlink).toHaveBeenCalled();
     });
 
-    it('should report failure and clean up when exec throws', async () => {
-      mockExecAsync.mockRejectedValue(new Error('mysqldump failed'));
+    it('should report failure and clean up when spawn emits error', async () => {
+      setupSpawnMocks({ error: new Error('mysqldump failed') });
       mockFsPromises.readdir.mockResolvedValue([]);
 
       const results = await service.triggerBackup(['acore_auth']);
@@ -138,7 +188,7 @@ describe('BackupService', () => {
     });
 
     it('should send webhook on success', async () => {
-      mockExecAsync.mockResolvedValue({ stdout: '', stderr: '' });
+      setupSpawnMocks();
       mockFsPromises.stat.mockResolvedValue({ size: 5000 });
       mockFsPromises.readdir.mockResolvedValue([]);
 
@@ -153,7 +203,7 @@ describe('BackupService', () => {
     });
 
     it('should send webhook on failure', async () => {
-      mockExecAsync.mockRejectedValue(new Error('fail'));
+      setupSpawnMocks({ error: new Error('fail') });
       mockFsPromises.readdir.mockResolvedValue([]);
 
       await service.triggerBackup(['acore_auth']);
@@ -164,6 +214,22 @@ describe('BackupService', () => {
         expect.any(String),
         expect.any(String),
       );
+    });
+
+    it('should report failure when dump exits with non-zero code', async () => {
+      const dumpProc = createMockProcess(1);
+      const gzipProc = createMockProcess(0);
+      const outStream = createMockWriteStream();
+
+      mockSpawn.mockReturnValueOnce(dumpProc).mockReturnValueOnce(gzipProc);
+      mockCreateWriteStream.mockReturnValue(outStream);
+      mockFsPromises.readdir.mockResolvedValue([]);
+
+      process.nextTick(() => outStream.emit('finish'));
+
+      const results = await service.triggerBackup(['acore_auth']);
+
+      expect(results[0].success).toBe(false);
     });
   });
 
