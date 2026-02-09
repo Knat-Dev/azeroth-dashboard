@@ -299,7 +299,7 @@ export default function PlayerDetailPage() {
                     {RIGHT_SLOTS.map(renderSlot)}
                   </div>
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   {BOTTOM_SLOTS.map(renderSlot)}
                 </div>
               </>
