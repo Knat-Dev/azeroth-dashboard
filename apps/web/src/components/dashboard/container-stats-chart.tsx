@@ -208,10 +208,11 @@ export function ContainerStatsChart() {
       gridLineColor: "#1f2937",
       labels: {
         style: { color: "#9ca3af", fontSize: "11px" },
-        formatter: function (this: { value: number }) {
-          return this.value >= 1024
-            ? `${Math.ceil(this.value / 1024)} GB`
-            : `${Math.ceil(this.value)} MB`;
+        formatter: function (this: { value: string | number }) {
+          const v = Number(this.value);
+          return v >= 1024
+            ? `${Math.ceil(v / 1024)} GB`
+            : `${Math.ceil(v)} MB`;
         },
       },
     },
