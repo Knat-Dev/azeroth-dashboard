@@ -7,16 +7,22 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
 import { DockerService } from '../docker/docker.service.js';
 import { SoapService } from '../admin/soap.service.js';
 import { EventService } from './event.service.js';
 import { WebhookService } from '../webhook/webhook.service.js';
 import { ServerService } from '../server/server.service.js';
-import type { ContainerHealth, HealthState } from '@repo/shared';
+import type {
+  ContainerHealth,
+  ContainerResourceStats,
+  HealthState,
+} from '@repo/shared';
 
 export type { ContainerHealth, HealthState };
 
 const POLL_INTERVAL_MS = 5000;
+const STATS_INTERVAL_MS = 10_000;
 const SOAP_TIMEOUT_MS = parseInt(process.env.SOAP_TIMEOUT_MS ?? '5000', 10);
 const PLAYER_RECORD_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -49,6 +55,10 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
   private pollHandle: ReturnType<typeof setInterval> | null = null;
   private playerRecordHandle: ReturnType<typeof setInterval> | null = null;
   private pruneHandle: ReturnType<typeof setInterval> | null = null;
+  private statsHandle: ReturnType<typeof setInterval> | null = null;
+  private cachedContainerStats: Record<string, ContainerResourceStats> = {};
+  private prevCpuIdle = 0;
+  private prevCpuTotal = 0;
 
   // Config (env defaults, overridden by SQLite settings)
   private autoRestartEnabled: boolean;
@@ -132,9 +142,17 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
       this.eventService.recordPlayerCount(this.cachedHealth.players.online);
     }, PLAYER_RECORD_INTERVAL_MS);
 
+    // Collect container stats every 30s
+    void this.collectStats();
+    this.statsHandle = setInterval(
+      () => void this.collectStats(),
+      STATS_INTERVAL_MS,
+    );
+
     // Prune old data daily
     this.pruneHandle = setInterval(() => {
       this.eventService.prunePlayerHistory();
+      this.eventService.pruneContainerStats();
     }, PRUNE_INTERVAL_MS);
   }
 
@@ -142,6 +160,7 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     if (this.pollHandle) clearInterval(this.pollHandle);
     if (this.playerRecordHandle) clearInterval(this.playerRecordHandle);
     if (this.pruneHandle) clearInterval(this.pruneHandle);
+    if (this.statsHandle) clearInterval(this.statsHandle);
     this.logger.log('Health monitor stopped');
   }
 
@@ -249,6 +268,10 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
         lastUpdated: new Date().toISOString(),
         uptime: this.lastSoapUptime || undefined,
         realmName,
+        containerStats:
+          Object.keys(this.cachedContainerStats).length > 0
+            ? this.cachedContainerStats
+            : undefined,
       };
     } catch (err) {
       this.logger.error(`Health poll failed: ${err}`);
@@ -513,6 +536,88 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
       return result.success;
     } catch {
       return false;
+    }
+  }
+
+  /** Read host CPU and memory from /proc. */
+  private getSystemStats(): ContainerResourceStats | null {
+    try {
+      // CPU from /proc/stat — first line: cpu user nice system idle iowait irq softirq steal
+      const stat = fs.readFileSync('/proc/stat', 'utf-8');
+      const cpuLine = stat.split('\n')[0]; // "cpu  ..."
+      const parts = cpuLine.split(/\s+/).slice(1).map(Number);
+      const idle = parts[3] + parts[4]; // idle + iowait
+      const total = parts.reduce((a, b) => a + b, 0);
+
+      let cpuPercent = 0;
+      if (this.prevCpuTotal > 0) {
+        const idleDelta = idle - this.prevCpuIdle;
+        const totalDelta = total - this.prevCpuTotal;
+        cpuPercent =
+          totalDelta > 0
+            ? Math.round((1 - idleDelta / totalDelta) * 100 * 100) / 100
+            : 0;
+      }
+      this.prevCpuIdle = idle;
+      this.prevCpuTotal = total;
+
+      // Memory from /proc/meminfo
+      const meminfo = fs.readFileSync('/proc/meminfo', 'utf-8');
+      const memTotal = this.parseMeminfoKB(meminfo, 'MemTotal');
+      const memAvailable = this.parseMeminfoKB(meminfo, 'MemAvailable');
+      const memoryUsageMB = Math.round(((memTotal - memAvailable) / 1024) * 100) / 100;
+      const memoryLimitMB = Math.round((memTotal / 1024) * 100) / 100;
+
+      return { cpuPercent, memoryUsageMB, memoryLimitMB };
+    } catch {
+      return null;
+    }
+  }
+
+  private parseMeminfoKB(meminfo: string, key: string): number {
+    const match = meminfo.match(new RegExp(`^${key}:\\s+(\\d+)`, 'm'));
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  private async collectStats(): Promise<void> {
+    try {
+      // Shared timestamp for all entries in this snapshot
+      const ts = new Date().toISOString().replace('T', ' ').replace('Z', '').split('.')[0];
+
+      // Collect system + container stats in parallel
+      const [systemStats, ...containerResults] = await Promise.all([
+        Promise.resolve(this.getSystemStats()),
+        ...CONTAINERS.map(async (name) => {
+          const stats = await this.dockerService.getContainerStats(name);
+          return { name, stats };
+        }),
+      ]);
+
+      if (systemStats) {
+        this.cachedContainerStats['system'] = systemStats;
+        this.eventService.recordContainerStats(
+          'system',
+          systemStats.cpuPercent,
+          systemStats.memoryUsageMB,
+          systemStats.memoryLimitMB,
+          ts,
+        );
+      }
+
+      for (const { name, stats } of containerResults) {
+        if (stats) {
+          this.cachedContainerStats[name] = stats;
+          this.eventService.recordContainerStats(
+            name,
+            stats.cpuPercent,
+            stats.memoryUsageMB,
+            stats.memoryLimitMB,
+            ts,
+          );
+        }
+      }
+    } catch {
+      // Silently ignore — don't pollute logs on every tick
     }
   }
 

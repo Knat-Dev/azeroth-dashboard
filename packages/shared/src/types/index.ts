@@ -152,6 +152,20 @@ export interface ContainerHealth {
   crashLoop?: boolean;
 }
 
+export interface ContainerResourceStats {
+  cpuPercent: number;
+  memoryUsageMB: number;
+  memoryLimitMB: number;
+}
+
+export interface ContainerStatsPoint {
+  timestamp: string;
+  container: string;
+  cpuPercent: number;
+  memoryUsageMB: number;
+  memoryLimitMB: number;
+}
+
 export interface HealthState {
   worldserver: ContainerHealth;
   authserver: ContainerHealth;
@@ -160,6 +174,7 @@ export interface HealthState {
   lastUpdated: string;
   uptime?: string;
   realmName?: string;
+  containerStats?: Record<string, ContainerResourceStats>;
 }
 
 export interface ServerEvent {

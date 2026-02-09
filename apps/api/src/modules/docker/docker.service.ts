@@ -230,4 +230,43 @@ export class DockerService {
   isAllowedContainer(name: string): boolean {
     return this.allowedContainers.includes(name);
   }
+
+  /** Get CPU and memory stats for a container (no allowlist check — internal use). */
+  async getContainerStats(
+    name: string,
+  ): Promise<{ cpuPercent: number; memoryUsageMB: number; memoryLimitMB: number } | null> {
+    try {
+      const data = await this.dockerRequest(
+        `/v1.45/containers/${name}/stats?stream=false`,
+      );
+      const stats = JSON.parse(data.toString('utf-8'));
+
+      // CPU % — normalized to total system capacity (0-100%) so it's
+      // directly comparable to host CPU from /proc/stat.
+      // systemDelta already spans all cores, so no numCpus multiplier.
+      const cpuDelta =
+        stats.cpu_stats.cpu_usage.total_usage -
+        stats.precpu_stats.cpu_usage.total_usage;
+      const systemDelta =
+        stats.cpu_stats.system_cpu_usage -
+        stats.precpu_stats.system_cpu_usage;
+      const cpuPercent =
+        systemDelta > 0
+          ? Math.round((cpuDelta / systemDelta) * 100 * 100) / 100
+          : 0;
+
+      // Memory
+      const cache = stats.memory_stats.stats?.cache ?? 0;
+      const memoryUsageMB =
+        Math.round(((stats.memory_stats.usage - cache) / 1024 / 1024) * 100) /
+        100;
+      const memoryLimitMB =
+        Math.round((stats.memory_stats.limit / 1024 / 1024) * 100) / 100;
+
+      return { cpuPercent, memoryUsageMB, memoryLimitMB };
+    } catch (err) {
+      this.logger.debug(`Failed to get stats for ${name}: ${err}`);
+      return null;
+    }
+  }
 }

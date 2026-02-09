@@ -50,6 +50,18 @@ export function getDatabase(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
     CREATE INDEX IF NOT EXISTS idx_events_container ON events(container);
     CREATE INDEX IF NOT EXISTS idx_player_history_timestamp ON player_history(timestamp);
+
+    CREATE TABLE IF NOT EXISTS container_stats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+      container TEXT NOT NULL,
+      cpu_percent REAL NOT NULL,
+      memory_usage_mb REAL NOT NULL,
+      memory_limit_mb REAL NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_container_stats_timestamp ON container_stats(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_container_stats_container ON container_stats(container);
   `);
 
   // Migration: add actor column if missing (safe for existing DBs)

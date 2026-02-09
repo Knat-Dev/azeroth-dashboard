@@ -116,6 +116,20 @@ export class ServerController {
     return this.serverService.getPlayerDetail(guid);
   }
 
+  @ApiOperation({ summary: 'Get container resource stats history' })
+  @Get('container-stats')
+  @UseGuards(JwtAuthGuard)
+  getContainerStats(
+    @Query('range') range?: string,
+    @Query('container') container?: string,
+  ) {
+    const validRanges = ['1m', '5m', '15m', '30m', '1h', '6h', '24h', '7d'] as const;
+    const r = validRanges.includes(range as (typeof validRanges)[number])
+      ? (range as '1m' | '5m' | '15m' | '30m' | '1h' | '6h' | '24h' | '7d')
+      : '5m';
+    return this.eventService.getContainerStatsHistory(r, container);
+  }
+
   @ApiOperation({ summary: 'Get class/race distribution' })
   @Get('stats/distribution')
   @UseGuards(JwtAuthGuard)
