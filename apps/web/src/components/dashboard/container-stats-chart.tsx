@@ -293,19 +293,24 @@ export function ContainerStatsChart() {
           Container Resources
         </h2>
         <div className="flex gap-1">
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              onClick={() => handleRangeChange(r)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                range === r
-                  ? "bg-primary/10 text-primary border border-primary/30"
-                  : "text-muted-foreground hover:bg-secondary border border-transparent"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
+          {RANGES.map((r) => {
+            const mobile = ["5m", "1h", "24h"].includes(r);
+            return (
+              <button
+                key={r}
+                onClick={() => handleRangeChange(r)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                  !mobile ? "hidden sm:block" : ""
+                } ${
+                  range === r
+                    ? "bg-primary/10 text-primary border border-primary/30"
+                    : "text-muted-foreground hover:bg-secondary border border-transparent"
+                }`}
+              >
+                {r}
+              </button>
+            );
+          })}
         </div>
       </div>
 
