@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import {
   useFloating,
-  autoUpdate,
   offset,
   flip,
   shift,
   useHover,
+  useClientPoint,
   useDismiss,
   useInteractions,
   FloatingPortal,
@@ -49,7 +49,6 @@ export function ItemTooltip({
     open,
     onOpenChange: setOpen,
     placement: "top-end",
-    whileElementsMounted: autoUpdate,
     middleware: [
       offset(16),
       flip({ fallbackPlacements: ["bottom-end", "top-start", "bottom-start"] }),
@@ -57,10 +56,12 @@ export function ItemTooltip({
     ],
   });
 
-  const hover = useHover(context, { delay: { open: 200, close: 0 } });
+  const hover = useHover(context);
+  const clientPoint = useClientPoint(context);
   const dismiss = useDismiss(context);
   const { getReferenceProps, getFloatingProps } = useInteractions([
     hover,
+    clientPoint,
     dismiss,
   ]);
 
@@ -84,17 +85,10 @@ export function ItemTooltip({
   const primaryStats = item.stats.filter((s) => PRIMARY_STAT_TYPES.has(s.type));
   const equipStats = item.stats.filter((s) => !PRIMARY_STAT_TYPES.has(s.type));
 
-  const anchorRef = useCallback(
-    (node: HTMLElement | null) => {
-      if (node) refs.setPositionReference(node);
-    },
-    [refs],
-  );
-
   return (
     <>
       <div ref={refs.setReference} {...getReferenceProps()}>
-        {typeof children === "function" ? children(anchorRef) : children}
+        {typeof children === "function" ? children(() => {}) : children}
       </div>
       {open && (
         <FloatingPortal>
@@ -102,7 +96,7 @@ export function ItemTooltip({
             ref={refs.setFloating}
             style={floatingStyles}
             {...getFloatingProps()}
-            className="z-50 w-72 rounded-lg border border-[#404040] bg-[#1a1a2e] p-3 shadow-xl"
+            className="z-50 w-72 rounded-lg border border-[#404040]/60 bg-[#1a1a2e]/65 p-3 shadow-xl backdrop-blur-sm"
           >
             {/* Name */}
             <div className="text-sm font-bold" style={{ color: qualityColor }}>
