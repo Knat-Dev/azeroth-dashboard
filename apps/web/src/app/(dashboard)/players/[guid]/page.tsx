@@ -254,26 +254,33 @@ export default function PlayerDetailPage() {
             )}
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            {equipment.map((slot) => (
-              <div
-                key={slot.slot}
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
-              >
-                <span className="text-muted-foreground">{EQUIPMENT_SLOTS[slot.slot] ?? `Slot ${slot.slot}`}</span>
-                {slot.item ? (
-                  <ItemTooltip item={slot.item}>
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: getItemQualityColor(slot.item.quality) }}
-                    >
-                      {slot.item.name}
-                    </span>
-                  </ItemTooltip>
-                ) : (
+            {equipment.map((slot) => {
+              const item = slot.item;
+              return item ? (
+                <ItemTooltip key={slot.slot} item={item}>
+                  {(anchorRef) => (
+                    <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors cursor-default">
+                      <span className="text-muted-foreground">{EQUIPMENT_SLOTS[slot.slot] ?? `Slot ${slot.slot}`}</span>
+                      <span
+                        ref={anchorRef}
+                        className="text-xs font-medium"
+                        style={{ color: getItemQualityColor(item.quality) }}
+                      >
+                        {item.name}
+                      </span>
+                    </div>
+                  )}
+                </ItemTooltip>
+              ) : (
+                <div
+                  key={slot.slot}
+                  className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
+                >
+                  <span className="text-muted-foreground">{EQUIPMENT_SLOTS[slot.slot] ?? `Slot ${slot.slot}`}</span>
                   <span className="text-muted-foreground/50">Empty</span>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

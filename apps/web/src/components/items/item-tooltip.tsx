@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   useFloating,
   autoUpdate,
@@ -41,23 +41,23 @@ export function ItemTooltip({
   children,
 }: {
   item: ItemTooltipData;
-  children: React.ReactNode;
+  children: React.ReactNode | ((anchorRef: (node: HTMLElement | null) => void) => React.ReactNode);
 }) {
   const [open, setOpen] = useState(false);
 
   const { refs, floatingStyles, context } = useFloating({
     open,
     onOpenChange: setOpen,
-    placement: "top",
+    placement: "top-end",
     whileElementsMounted: autoUpdate,
     middleware: [
-      offset(8),
-      flip({ fallbackPlacements: ["bottom", "right", "left"] }),
+      offset(16),
+      flip({ fallbackPlacements: ["bottom-end", "top-start", "bottom-start"] }),
       shift({ padding: 8 }),
     ],
   });
 
-  const hover = useHover(context, { delay: { open: 100, close: 0 } });
+  const hover = useHover(context, { delay: { open: 200, close: 0 } });
   const dismiss = useDismiss(context);
   const { getReferenceProps, getFloatingProps } = useInteractions([
     hover,
@@ -84,11 +84,18 @@ export function ItemTooltip({
   const primaryStats = item.stats.filter((s) => PRIMARY_STAT_TYPES.has(s.type));
   const equipStats = item.stats.filter((s) => !PRIMARY_STAT_TYPES.has(s.type));
 
+  const anchorRef = useCallback(
+    (node: HTMLElement | null) => {
+      if (node) refs.setPositionReference(node);
+    },
+    [refs],
+  );
+
   return (
     <>
-      <span ref={refs.setReference} {...getReferenceProps()} className="inline-block">
-        {children}
-      </span>
+      <div ref={refs.setReference} {...getReferenceProps()}>
+        {typeof children === "function" ? children(anchorRef) : children}
+      </div>
       {open && (
         <FloatingPortal>
           <div
