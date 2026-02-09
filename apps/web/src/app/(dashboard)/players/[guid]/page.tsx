@@ -99,8 +99,7 @@ export default function PlayerDetailPage() {
       <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
         <div className="flex items-center gap-3">
           <span
-            className="inline-block h-3 w-3 rounded-full"
-            style={{ backgroundColor: getClassColor(player.class) }}
+            className={`inline-block h-3 w-3 rounded-full ${player.online === 1 ? "bg-green-500" : "bg-muted-foreground/40"}`}
           />
           <h1 className="text-2xl font-bold" style={{ color: getClassColor(player.class) }}>
             {player.name}
@@ -139,39 +138,7 @@ export default function PlayerDetailPage() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Heart className="h-3.5 w-3.5 text-red-400" />
-            Health
-          </div>
-          <p className="mt-1 text-lg font-bold text-foreground">{player.health.toLocaleString()}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Shield className="h-3.5 w-3.5 text-blue-400" />
-            Power
-          </div>
-          <p className="mt-1 text-lg font-bold text-foreground">{player.power1.toLocaleString()}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Swords className="h-3.5 w-3.5 text-orange-400" />
-            Total Kills
-          </div>
-          <p className="mt-1 text-lg font-bold text-foreground">{player.totalKills.toLocaleString()}</p>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Trophy className="h-3.5 w-3.5 text-yellow-400" />
-            Honor Points
-          </div>
-          <p className="mt-1 text-lg font-bold text-foreground">{player.totalHonorPoints.toLocaleString()}</p>
-        </div>
-      </div>
-
-      {/* Info Grid */}
+      {/* Info row */}
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -243,8 +210,42 @@ export default function PlayerDetailPage() {
         </div>
       </div>
 
-      {/* Equipment */}
-      {hasEquipment && (
+      {/* Stats + Equipment side by side */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
+        {/* Left: Stats */}
+        <div className="flex flex-col gap-3">
+          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Heart className="h-3.5 w-3.5 text-red-400" />
+              Health
+            </div>
+            <p className="mt-1 text-lg font-bold text-foreground">{player.health.toLocaleString()}</p>
+          </div>
+          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Shield className="h-3.5 w-3.5 text-blue-400" />
+              Power
+            </div>
+            <p className="mt-1 text-lg font-bold text-foreground">{player.power1.toLocaleString()}</p>
+          </div>
+          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Swords className="h-3.5 w-3.5 text-orange-400" />
+              Total Kills
+            </div>
+            <p className="mt-1 text-lg font-bold text-foreground">{player.totalKills.toLocaleString()}</p>
+          </div>
+          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Trophy className="h-3.5 w-3.5 text-yellow-400" />
+              Honor Points
+            </div>
+            <p className="mt-1 text-lg font-bold text-foreground">{player.totalHonorPoints.toLocaleString()}</p>
+          </div>
+        </div>
+
+        {/* Right: Equipment */}
+        {hasEquipment && (
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -305,7 +306,8 @@ export default function PlayerDetailPage() {
             );
           })()}
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
