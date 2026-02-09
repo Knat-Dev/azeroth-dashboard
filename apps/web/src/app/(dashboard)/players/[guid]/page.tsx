@@ -16,13 +16,17 @@ import { ArrowLeft, Clock, Coins, Heart, Info, MapPin, Shield, Swords, Trophy, U
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const EQUIPMENT_SLOTS = [
-  "Head", "Neck", "Shoulders", "Body", "Chest",
-  "Waist", "Legs", "Feet", "Wrists", "Hands",
-  "Ring 1", "Ring 2", "Trinket 1", "Trinket 2",
-  "Back", "Main Hand", "Off Hand", "Ranged", "Tabard",
-  "Bag 1", "Bag 2", "Bag 3", "Bag 4",
-];
+const EQUIPMENT_SLOTS: Record<number, string> = {
+  0: "Head", 1: "Neck", 2: "Shoulders", 3: "Shirt", 4: "Chest",
+  5: "Waist", 6: "Legs", 7: "Feet", 8: "Wrists", 9: "Hands",
+  10: "Ring 1", 11: "Ring 2", 12: "Trinket 1", 13: "Trinket 2",
+  14: "Back", 15: "Main Hand", 16: "Off Hand", 17: "Ranged", 18: "Tabard",
+};
+
+// WoW character screen layout
+const LEFT_SLOTS = [0, 1, 2, 14, 4, 3, 18, 8];   // Head, Neck, Shoulders, Back, Chest, Shirt, Tabard, Wrists
+const RIGHT_SLOTS = [9, 5, 6, 7, 10, 11, 12, 13]; // Hands, Waist, Legs, Feet, Ring1, Ring2, Trinket1, Trinket2
+const BOTTOM_SLOTS = [15, 16, 17];                  // Main Hand, Off Hand, Ranged
 
 export default function PlayerDetailPage() {
   const params = useParams();
@@ -253,17 +257,20 @@ export default function PlayerDetailPage() {
               </span>
             )}
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {equipment.map((slot) => {
-              const item = slot.item;
+          {(() => {
+            const slotMap = new Map(equipment.map((s) => [s.slot, s]));
+            const renderSlot = (slotIdx: number) => {
+              const slot = slotMap.get(slotIdx);
+              const item = slot?.item ?? null;
+              const label = EQUIPMENT_SLOTS[slotIdx] ?? `Slot ${slotIdx}`;
               return item ? (
-                <ItemTooltip key={slot.slot} item={item}>
+                <ItemTooltip key={slotIdx} item={item}>
                   {(anchorRef) => (
                     <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors cursor-default">
-                      <span className="text-muted-foreground">{EQUIPMENT_SLOTS[slot.slot] ?? `Slot ${slot.slot}`}</span>
+                      <span className="text-muted-foreground">{label}</span>
                       <span
                         ref={anchorRef}
-                        className="text-xs font-medium"
+                        className="truncate ml-2 text-xs font-medium"
                         style={{ color: getItemQualityColor(item.quality) }}
                       >
                         {item.name}
@@ -273,15 +280,30 @@ export default function PlayerDetailPage() {
                 </ItemTooltip>
               ) : (
                 <div
-                  key={slot.slot}
+                  key={slotIdx}
                   className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
                 >
-                  <span className="text-muted-foreground">{EQUIPMENT_SLOTS[slot.slot] ?? `Slot ${slot.slot}`}</span>
+                  <span className="text-muted-foreground">{label}</span>
                   <span className="text-muted-foreground/50">Empty</span>
                 </div>
               );
-            })}
-          </div>
+            };
+            return (
+              <>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    {LEFT_SLOTS.map(renderSlot)}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {RIGHT_SLOTS.map(renderSlot)}
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {BOTTOM_SLOTS.map(renderSlot)}
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

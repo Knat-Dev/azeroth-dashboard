@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatGold, formatPlaytime } from "@/lib/utils";
 import type { OnlinePlayer, PaginatedResponse } from "@repo/shared";
@@ -18,6 +18,7 @@ const LIMIT = 20;
 const REFRESH_INTERVAL = 30;
 
 export default function PlayersPage() {
+  const router = useRouter();
   const [players, setPlayers] = useState<OnlinePlayer[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -209,15 +210,11 @@ export default function PlayersPage() {
                     return (
                       <tr
                         key={player.guid}
-                        className="border-b border-border/50 last:border-0 text-sm text-foreground hover:bg-secondary/30 transition-colors"
+                        onClick={() => router.push(`/players/${player.name}`)}
+                        className="border-b border-border/50 last:border-0 text-sm text-foreground hover:bg-secondary/30 transition-colors cursor-pointer"
                       >
-                        <td className="px-4 py-3 font-medium">
-                          <Link
-                            href={`/players/${player.name}`}
-                            className="text-primary hover:underline"
-                          >
-                            {player.name}
-                          </Link>
+                        <td className="px-4 py-3 font-medium text-primary">
+                          {player.name}
                         </td>
                         <td className="px-4 py-3">{player.level}</td>
                         <td className="px-4 py-3">
