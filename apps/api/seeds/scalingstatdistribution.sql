@@ -1,4 +1,4 @@
-INSERT INTO `scalingstatdistribution_dbc` (`ID`, `StatID_1`, `StatID_2`, `StatID_3`, `StatID_4`, `StatID_5`, `StatID_6`, `StatID_7`, `StatID_8`, `StatID_9`, `StatID_10`, `Bonus_1`, `Bonus_2`, `Bonus_3`, `Bonus_4`, `Bonus_5`, `Bonus_6`, `Bonus_7`, `Bonus_8`, `Bonus_9`, `Bonus_10`, `Maxlevel`) VALUES
+INSERT INTO scaling_stat_distribution (id, stat_id_1, stat_id_2, stat_id_3, stat_id_4, stat_id_5, stat_id_6, stat_id_7, stat_id_8, stat_id_9, stat_id_10, bonus_1, bonus_2, bonus_3, bonus_4, bonus_5, bonus_6, bonus_7, bonus_8, bonus_9, bonus_10, maxlevel) VALUES
 (1, 4, 7, 32, -1, -1, -1, -1, -1, -1, -1, 5259, 7888, 5259, 0, 0, 0, 0, 0, 0, 0, 80),
 (2, 38, 3, 31, -1, -1, -1, -1, -1, -1, -1, 14532, 4106, 3193, 0, 0, 0, 0, 0, 0, 0, 80),
 (3, 38, 7, 32, -1, -1, -1, -1, -1, -1, -1, 10518, 7888, 5259, 0, 0, 0, 0, 0, 0, 0, 80),

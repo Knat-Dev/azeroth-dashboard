@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import type { ItemTooltipData, EquippedItemSlot } from '@repo/shared';
 import { Realmlist } from '../../entities/auth/realmlist.entity.js';
 import { Character } from '../../entities/characters/character.entity.js';
@@ -9,15 +9,16 @@ import { ItemInstance } from '../../entities/characters/item-instance.entity.js'
 import { Guild } from '../../entities/characters/guild.entity.js';
 import { GuildMember } from '../../entities/characters/guild-member.entity.js';
 import { ItemTemplate } from '../../entities/world/item-template.entity.js';
-import { ItemRandomProperties } from '../../entities/world/item-random-properties.entity.js';
-import { ItemRandomSuffix } from '../../entities/world/item-random-suffix.entity.js';
-import { ScalingStatDistribution } from '../../entities/world/scaling-stat-distribution.entity.js';
-import { ScalingStatValues } from '../../entities/world/scaling-stat-values.entity.js';
-import { SpellItemEnchantment } from '../../entities/world/spell-item-enchantment.entity.js';
-import { RandPropPoints } from '../../entities/world/rand-prop-points.entity.js';
+import {
+  DbcStore,
+  type EnchantmentRow,
+  type RandomSuffixRow,
+  type RandPropPointsRow,
+  type ScalingStatValuesRow,
+} from './dbc-store.service.js';
 
 /** ScalingStatValue bitmask → budget column mapping */
-const SSV_BUDGET_MAP: { mask: number; key: keyof ScalingStatValues }[] = [
+const SSV_BUDGET_MAP: { mask: number; key: keyof ScalingStatValuesRow }[] = [
   { mask: 0x00001, key: 'shoulderBudget' },
   { mask: 0x00002, key: 'trinketBudget' },
   { mask: 0x00004, key: 'weaponBudget1H' },
@@ -45,18 +46,7 @@ export class ServerService {
     private guildMemberRepo: Repository<GuildMember>,
     @InjectRepository(ItemTemplate, 'world')
     private itemTemplateRepo: Repository<ItemTemplate>,
-    @InjectRepository(ItemRandomProperties, 'world')
-    private randomPropsRepo: Repository<ItemRandomProperties>,
-    @InjectRepository(ItemRandomSuffix, 'world')
-    private randomSuffixRepo: Repository<ItemRandomSuffix>,
-    @InjectRepository(ScalingStatDistribution, 'world')
-    private ssdRepo: Repository<ScalingStatDistribution>,
-    @InjectRepository(ScalingStatValues, 'world')
-    private ssvRepo: Repository<ScalingStatValues>,
-    @InjectRepository(SpellItemEnchantment, 'world')
-    private enchantmentRepo: Repository<SpellItemEnchantment>,
-    @InjectRepository(RandPropPoints, 'world')
-    private randPropPointsRepo: Repository<RandPropPoints>,
+    private dbcStore: DbcStore,
   ) {}
 
   async getOnlineCount(): Promise<number> {
@@ -323,11 +313,9 @@ export class ServerService {
         negativeRPIds.push(Math.abs(inst.randomPropertyId));
     }
 
-    // Batch fetch suffix data
-    const [randomPropsMap, randomSuffixMap] = await Promise.all([
-      this.batchFetchRandomProperties(positiveRPIds),
-      this.batchFetchRandomSuffixes(negativeRPIds),
-    ]);
+    // Batch fetch suffix data (sync from SQLite)
+    const randomPropsMap = this.dbcStore.getRandomProperties(positiveRPIds);
+    const randomSuffixMap = this.dbcStore.getRandomSuffixes(negativeRPIds);
 
     // 4b. Collect enchantment IDs from instances with random properties
     // and batch-fetch enchantment data + rand prop points
@@ -340,10 +328,8 @@ export class ServerService {
       const tmpl = templateMap.get(inst.itemEntry);
       if (tmpl && inst.randomPropertyId < 0) allItemLevels.add(tmpl.itemLevel);
     }
-    const [enchantmentMap, randPropPointsMap] = await Promise.all([
-      this.batchFetchEnchantments([...allEnchantIds]),
-      this.batchFetchRandPropPoints([...allItemLevels]),
-    ]);
+    const enchantmentMap = this.dbcStore.getEnchantments([...allEnchantIds]);
+    const randPropPointsMap = this.dbcStore.getRandPropPoints([...allItemLevels]);
 
     // 5. Collect scaling stat distribution IDs for heirloom items
     const ssdIds = [
@@ -353,12 +339,12 @@ export class ServerService {
           .map((t) => t.scalingStatDistribution),
       ),
     ];
-    const ssdMap = await this.batchFetchSSD(ssdIds);
+    const ssdMap = this.dbcStore.getScalingStatDistributions(ssdIds);
 
     // Fetch SSV row for this character level (needed for heirloom scaling)
-    let ssvRow: ScalingStatValues | null = null;
+    let ssvRow: ScalingStatValuesRow | undefined;
     if (ssdIds.length > 0) {
-      ssvRow = await this.ssvRepo.findOne({ where: { charlevel: level } });
+      ssvRow = this.dbcStore.getScalingStatValues(level);
     }
 
     // 6. Collect spell IDs from templates and batch-fetch descriptions
@@ -370,10 +356,7 @@ export class ServerService {
         if (spellId > 0) allSpellIds.add(spellId);
       }
     }
-    const spellTextMap = await this.batchFetchSpellText(
-      [...allSpellIds],
-      this.itemTemplateRepo.manager.connection,
-    );
+    const spellTextMap = this.dbcStore.getSpellTexts([...allSpellIds]);
 
     // 7. Build result for all 23 slots
     const result: EquippedItemSlot[] = [];
@@ -400,11 +383,11 @@ export class ServerService {
       let suffixName = '';
       if (instance.randomPropertyId > 0) {
         suffixName =
-          randomPropsMap.get(instance.randomPropertyId)?.nameLangEnUS ?? '';
+          randomPropsMap.get(instance.randomPropertyId)?.name ?? '';
       } else if (instance.randomPropertyId < 0) {
         suffixName =
           randomSuffixMap.get(Math.abs(instance.randomPropertyId))
-            ?.nameLangEnUS ?? '';
+            ?.name ?? '';
       }
 
       // Build base stats from template
@@ -437,9 +420,7 @@ export class ServerService {
           const effectiveSSV =
             cappedLevel === level
               ? ssvRow
-              : await this.ssvRepo.findOne({
-                  where: { charlevel: cappedLevel },
-                });
+              : this.dbcStore.getScalingStatValues(cappedLevel);
 
           if (effectiveSSV) {
             // Resolve budget multiplier from ScalingStatValue bitmask
@@ -596,51 +577,9 @@ export class ServerService {
     return stats;
   }
 
-  private async batchFetchRandomProperties(
-    ids: number[],
-  ): Promise<Map<number, ItemRandomProperties>> {
-    if (ids.length === 0) return new Map();
-    try {
-      const rows = await this.randomPropsRepo.find({
-        where: { ID: In([...new Set(ids)]) },
-      });
-      return new Map(rows.map((r) => [r.ID, r]));
-    } catch {
-      return new Map();
-    }
-  }
-
-  private async batchFetchRandomSuffixes(
-    ids: number[],
-  ): Promise<Map<number, ItemRandomSuffix>> {
-    if (ids.length === 0) return new Map();
-    try {
-      const rows = await this.randomSuffixRepo.find({
-        where: { ID: In([...new Set(ids)]) },
-      });
-      return new Map(rows.map((r) => [r.ID, r]));
-    } catch {
-      return new Map();
-    }
-  }
-
-  private async batchFetchSSD(
-    ids: number[],
-  ): Promise<Map<number, ScalingStatDistribution>> {
-    if (ids.length === 0) return new Map();
-    try {
-      const rows = await this.ssdRepo.find({
-        where: { ID: In([...new Set(ids)]) },
-      });
-      return new Map(rows.map((r) => [r.ID, r]));
-    } catch {
-      return new Map();
-    }
-  }
-
   private resolveBudgetMultiplier(
     bitmask: number,
-    ssv: ScalingStatValues,
+    ssv: ScalingStatValuesRow,
   ): number {
     for (const { mask, key } of SSV_BUDGET_MAP) {
       if (bitmask & mask) {
@@ -652,10 +591,10 @@ export class ServerService {
 
   private resolveScaledArmor(
     bitmask: number,
-    ssv: ScalingStatValues,
+    ssv: ScalingStatValuesRow,
   ): number {
     // Armor bitmask bits from DBCStructure.h getArmorMod():
-    const armorMap: { mask: number; key: keyof ScalingStatValues }[] = [
+    const armorMap: { mask: number; key: keyof ScalingStatValuesRow }[] = [
       { mask: 0x00000020, key: 'clothShoulderArmor' },
       { mask: 0x00000040, key: 'leatherShoulderArmor' },
       { mask: 0x00000080, key: 'mailShoulderArmor' },
@@ -676,10 +615,10 @@ export class ServerService {
 
   private resolveScaledDPS(
     bitmask: number,
-    ssv: ScalingStatValues,
+    ssv: ScalingStatValuesRow,
   ): number {
     // DPS bitmask bits from DBCStructure.h getDPSMod():
-    const dpsMap: { mask: number; key: keyof ScalingStatValues }[] = [
+    const dpsMap: { mask: number; key: keyof ScalingStatValuesRow }[] = [
       { mask: 0x00000200, key: 'weaponDPS1H' },
       { mask: 0x00000400, key: 'weaponDPS2H' },
       { mask: 0x00000800, key: 'spellcasterDPS1H' },
@@ -698,51 +637,6 @@ export class ServerService {
   /** From DBCStructure.h IsTwoHand(): bits 0x400 (2H) and 0x1000 (caster 2H) */
   private isTwoHandDPS(bitmask: number): boolean {
     return (bitmask & 0x00000400) !== 0 || (bitmask & 0x00001000) !== 0;
-  }
-
-  private async batchFetchEnchantments(
-    ids: number[],
-  ): Promise<Map<number, SpellItemEnchantment>> {
-    if (ids.length === 0) return new Map();
-    try {
-      const rows = await this.enchantmentRepo.find({
-        where: { ID: In(ids) },
-      });
-      return new Map(rows.map((r) => [r.ID, r]));
-    } catch {
-      return new Map();
-    }
-  }
-
-  private async batchFetchRandPropPoints(
-    itemLevels: number[],
-  ): Promise<Map<number, RandPropPoints>> {
-    if (itemLevels.length === 0) return new Map();
-    try {
-      const rows = await this.randPropPointsRepo.find({
-        where: { ID: In(itemLevels) },
-      });
-      return new Map(rows.map((r) => [r.ID, r]));
-    } catch {
-      return new Map();
-    }
-  }
-
-  private async batchFetchSpellText(
-    spellIds: number[],
-    ds: DataSource,
-  ): Promise<Map<number, string>> {
-    if (spellIds.length === 0) return new Map();
-    try {
-      const placeholders = spellIds.map(() => '?').join(',');
-      const rows: { ID: number; Description: string }[] = await ds.query(
-        `SELECT ID, Description FROM item_spell_text WHERE ID IN (${placeholders})`,
-        spellIds,
-      );
-      return new Map(rows.map((r) => [r.ID, r.Description]));
-    } catch {
-      return new Map();
-    }
   }
 
   /**
@@ -771,9 +665,9 @@ export class ServerService {
   private resolveRandomPropertyStats(
     instance: ItemInstance,
     template: ItemTemplate,
-    enchantmentMap: Map<number, SpellItemEnchantment>,
-    randomSuffixMap: Map<number, ItemRandomSuffix>,
-    randPropPointsMap: Map<number, RandPropPoints>,
+    enchantmentMap: Map<number, EnchantmentRow>,
+    randomSuffixMap: Map<number, RandomSuffixRow>,
+    randPropPointsMap: Map<number, RandPropPointsRow>,
   ): { type: number; value: number }[] {
     const enchIds = this.parseRandomEnchantmentIds(instance.enchantments);
     if (enchIds.length === 0) return [];
@@ -835,7 +729,7 @@ export class ServerService {
    */
   private getSuffixFactor(
     template: ItemTemplate,
-    randPropPointsMap: Map<number, RandPropPoints>,
+    randPropPointsMap: Map<number, RandPropPointsRow>,
   ): number {
     const rpp = randPropPointsMap.get(template.itemLevel);
     if (!rpp) return 0;
@@ -867,7 +761,6 @@ export class ServerService {
         break;
       case 2:  // NECK
       case 9:  // WRISTS
-      case 11: // FINGER
       case 14: // SHIELD
       case 16: // CLOAK (INVTYPE_CLOAK = 16)
       case 23: // HOLDABLE

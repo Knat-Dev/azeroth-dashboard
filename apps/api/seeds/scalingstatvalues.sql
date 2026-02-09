@@ -1,4 +1,4 @@
-INSERT INTO `scalingstatvalues_dbc` (`ID`, `Charlevel`, `ShoulderBudget`, `TrinketBudget`, `WeaponBudget1H`, `RangedBudget`, `ClothShoulderArmor`, `LeatherShoulderArmor`, `MailShoulderArmor`, `PlateShoulderArmor`, `WeaponDPS1H`, `WeaponDPS2H`, `SpellcasterDPS1H`, `SpellcasterDPS2H`, `RangedDPS`, `WandDPS`, `SpellPower`, `PrimaryBudget`, `TertiaryBudget`, `ClothCloakArmor`, `ClothChestArmor`, `LeatherChestArmor`, `MailChestArmor`, `PlateChestArmor`) VALUES
+INSERT INTO scaling_stat_values (id, charlevel, shoulder_budget, trinket_budget, weapon_budget_1h, ranged_budget, cloth_shoulder_armor, leather_shoulder_armor, mail_shoulder_armor, plate_shoulder_armor, weapon_dps_1h, weapon_dps_2h, spellcaster_dps_1h, spellcaster_dps_2h, ranged_dps, wand_dps, spell_power, primary_budget, tertiary_budget, cloth_cloak_armor, cloth_chest_armor, leather_chest_armor, mail_chest_armor, plate_chest_armor) VALUES
 (1, 1, 2, 2, 1, 1, 10, 32, 32, 64, 6, 8, 6, 8, 6, 8, 1, 3, 1, 7, 13, 43, 43, 85),
 (2, 2, 3, 3, 1, 1, 12, 35, 35, 70, 6, 9, 6, 9, 7, 9, 2, 3, 2, 8, 16, 47, 47, 93),
 (3, 3, 3, 3, 1, 1, 13, 39, 39, 76, 7, 9, 7, 9, 7, 10, 3, 4, 2, 9, 17, 52, 52, 101),

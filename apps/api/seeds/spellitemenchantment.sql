@@ -1,4 +1,4 @@
-INSERT INTO `spellitemenchantment_dbc` (`ID`, `Charges`, `Effect_1`, `Effect_2`, `Effect_3`, `EffectPointsMin_1`, `EffectPointsMin_2`, `EffectPointsMin_3`, `EffectPointsMax_1`, `EffectPointsMax_2`, `EffectPointsMax_3`, `EffectArg_1`, `EffectArg_2`, `EffectArg_3`) VALUES
+INSERT INTO spell_item_enchantment (id, charges, effect_1, effect_2, effect_3, effect_points_min_1, effect_points_min_2, effect_points_min_3, effect_points_max_1, effect_points_max_2, effect_points_max_3, effect_arg_1, effect_arg_2, effect_arg_3) VALUES
 (1, 0, 6, 0, 0, 6, 0, 0, 6, 0, 0, 0, 0, 0),
 (2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 8034, 0, 0),
 (3, 0, 3, 0, 0, 100, 0, 0, 100, 0, 0, 15568, 0, 0),

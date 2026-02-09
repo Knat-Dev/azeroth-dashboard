@@ -1,4 +1,4 @@
-INSERT INTO `itemrandomsuffix_dbc` (`ID`, `Name_Lang_enUS`, `Enchantment_1`, `Enchantment_2`, `Enchantment_3`, `Enchantment_4`, `Enchantment_5`, `AllocationPct_1`, `AllocationPct_2`, `AllocationPct_3`, `AllocationPct_4`, `AllocationPct_5`) VALUES
+INSERT INTO item_random_suffix (id, name, enchantment_1, enchantment_2, enchantment_3, enchantment_4, enchantment_5, allocation_pct_1, allocation_pct_2, allocation_pct_3, allocation_pct_4, allocation_pct_5) VALUES
 (5, 'of the Monkey', 2803, 0, 0, 0, 6666, 10000, 0, 0, 0, 6),
 (6, 'of the Eagle', 2803, 0, 0, 0, 6666, 10000, 0, 0, 0, 7),
 (7, 'of the Bear', 2805, 0, 0, 0, 10000, 6666, 0, 0, 0, 8),

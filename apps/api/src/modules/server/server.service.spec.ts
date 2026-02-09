@@ -9,20 +9,40 @@ describe('ServerService', () => {
   let service: ServerService;
   let realmRepo: ReturnType<typeof createMockRepository>;
   let characterRepo: ReturnType<typeof createMockRepository>;
+  let inventoryRepo: ReturnType<typeof createMockRepository>;
+  let itemInstanceRepo: ReturnType<typeof createMockRepository>;
   let guildRepo: ReturnType<typeof createMockRepository>;
   let guildMemberRepo: ReturnType<typeof createMockRepository>;
+  let itemTemplateRepo: ReturnType<typeof createMockRepository>;
+  let dbcStore: Record<string, jest.Mock>;
 
   beforeEach(() => {
     realmRepo = createMockRepository();
     characterRepo = createMockRepository();
+    inventoryRepo = createMockRepository();
+    itemInstanceRepo = createMockRepository();
     guildRepo = createMockRepository();
     guildMemberRepo = createMockRepository();
+    itemTemplateRepo = createMockRepository();
+    dbcStore = {
+      getRandomProperties: jest.fn().mockReturnValue(new Map()),
+      getRandomSuffixes: jest.fn().mockReturnValue(new Map()),
+      getEnchantments: jest.fn().mockReturnValue(new Map()),
+      getRandPropPoints: jest.fn().mockReturnValue(new Map()),
+      getScalingStatDistributions: jest.fn().mockReturnValue(new Map()),
+      getScalingStatValues: jest.fn().mockReturnValue(undefined),
+      getSpellTexts: jest.fn().mockReturnValue(new Map()),
+    };
 
     service = new ServerService(
       realmRepo as any,
       characterRepo as any,
+      inventoryRepo as any,
+      itemInstanceRepo as any,
       guildRepo as any,
       guildMemberRepo as any,
+      itemTemplateRepo as any,
+      dbcStore as any,
     );
   });
 

@@ -32,12 +32,6 @@ import { GuildMember } from './entities/characters/guild-member.entity.js';
 
 // World DB entities
 import { ItemTemplate } from './entities/world/item-template.entity.js';
-import { ItemRandomProperties } from './entities/world/item-random-properties.entity.js';
-import { ItemRandomSuffix } from './entities/world/item-random-suffix.entity.js';
-import { ScalingStatDistribution } from './entities/world/scaling-stat-distribution.entity.js';
-import { ScalingStatValues } from './entities/world/scaling-stat-values.entity.js';
-import { SpellItemEnchantment } from './entities/world/spell-item-enchantment.entity.js';
-import { RandPropPoints } from './entities/world/rand-prop-points.entity.js';
 
 @Module({
   imports: [
@@ -108,15 +102,7 @@ import { RandPropPoints } from './entities/world/rand-prop-points.entity.js';
         username: config.get('DB_USER', 'root'),
         password: config.get('DB_ROOT_PASSWORD', 'password'),
         database: 'acore_world',
-        entities: [
-          ItemTemplate,
-          ItemRandomProperties,
-          ItemRandomSuffix,
-          ScalingStatDistribution,
-          ScalingStatValues,
-          SpellItemEnchantment,
-          RandPropPoints,
-        ],
+        entities: [ItemTemplate],
         synchronize: false,
       }),
     }),

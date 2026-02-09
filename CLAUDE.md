@@ -46,8 +46,11 @@ The API container mounts `/var/run/docker.sock` to manage AzerothCore containers
 
 ## Databases
 
-- **MySQL** (via TypeORM): AzerothCore's `acore_auth`, `acore_characters`, `acore_world` — read-only for dashboard queries (accounts, characters, guilds, bans)
-- **SQLite** (via better-sqlite3): Dashboard-local data at `/data/dashboard.db` (prod) or `./data/dashboard.db` (dev) — events, player_history, settings
+- **MySQL** (via TypeORM): AzerothCore's `acore_auth`, `acore_characters`, `acore_world` — read-only for dashboard queries (accounts, characters, guilds, bans). Only `ItemTemplate` is registered from `acore_world`; no writes to any game DB.
+- **SQLite** (via better-sqlite3): Two database files:
+  - `dashboard.db` — mutable operational data (events, player_history, settings, container_stats)
+  - `dbc.db` — immutable DBC reference data (item random properties/suffixes, enchantments, scaling stats, spell texts). Auto-seeded from `apps/api/seeds/*.sql` on first run. Can be safely deleted and regenerated.
+  - Path: `/data/` (prod) or `./data/` (dev)
 
 ## Item Tooltips & Equipment System
 
@@ -80,9 +83,10 @@ Equipment data flows through `GET /server/players/:guid/equipment?level=N`:
 - `$s1`/`$s2`/`$s3` placeholders resolved at seed time using `EffectBasePoints + 1`
 
 ### DBC Seed Data
-`DbcSeedService` (OnModuleInit) auto-seeds 7 tables from `apps/api/seeds/*.sql`:
-- `itemrandomproperties_dbc`, `itemrandomsuffix_dbc`, `scalingstatdistribution_dbc`, `scalingstatvalues_dbc`, `spellitemenchantment_dbc`, `randproppoints_dbc` (AzerothCore tables, empty by default)
-- `item_spell_text` (custom table created by seed SQL)
+`DbcStore` service (OnModuleInit) manages a dedicated `dbc.db` SQLite file with 7 tables, auto-seeded from `apps/api/seeds/*.sql`:
+- `item_random_properties`, `item_random_suffix`, `scaling_stat_distribution`, `scaling_stat_values`, `spell_item_enchantment`, `rand_prop_points`, `item_spell_text`
+- All DBC data is stored in the dashboard's own SQLite — no writes to AzerothCore's MySQL databases
+- `DbcStore` exposes typed synchronous lookup methods (using better-sqlite3 prepared statements) consumed by `ServerService`
 
 **How the seeds were created:**
 

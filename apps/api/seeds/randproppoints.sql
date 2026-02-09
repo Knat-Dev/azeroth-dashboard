@@ -1,4 +1,4 @@
-INSERT INTO `randproppoints_dbc` (`ID`, `Epic_1`, `Epic_2`, `Epic_3`, `Epic_4`, `Epic_5`, `Superior_1`, `Superior_2`, `Superior_3`, `Superior_4`, `Superior_5`, `Good_1`, `Good_2`, `Good_3`, `Good_4`, `Good_5`) VALUES
+INSERT INTO rand_prop_points (id, epic_1, epic_2, epic_3, epic_4, epic_5, superior_1, superior_2, superior_3, superior_4, superior_5, good_1, good_2, good_3, good_4, good_5) VALUES
 (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
