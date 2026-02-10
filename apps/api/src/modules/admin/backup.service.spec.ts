@@ -5,14 +5,34 @@ import { createMockConfigService } from '../../shared/test-utils';
 
 // Use var so the factory closures can reference them (var is hoisted, const/let are not)
 /* eslint-disable no-var */
-var mockSpawn: jest.Mock;
+var mockCreateConnection: jest.Mock;
+var mockEscape: jest.Mock;
+var mockCreateGzip: jest.Mock;
 var mockFsPromises: Record<string, jest.Mock>;
 var mockCreateWriteStream: jest.Mock;
 /* eslint-enable no-var */
 
-jest.mock('child_process', () => {
-  mockSpawn = jest.fn();
-  return { spawn: mockSpawn };
+jest.mock('mysql2', () => {
+  mockCreateConnection = jest.fn();
+  mockEscape = jest.fn((v: unknown) => {
+    if (typeof v === 'string') return `'${v}'`;
+    return String(v);
+  });
+  return {
+    __esModule: true,
+    default: {
+      createConnection: mockCreateConnection,
+      escape: mockEscape,
+    },
+    createConnection: mockCreateConnection,
+    escape: mockEscape,
+  };
+});
+
+jest.mock('zlib', () => {
+  const actual = jest.requireActual('zlib');
+  mockCreateGzip = jest.fn();
+  return { ...actual, createGzip: mockCreateGzip };
 });
 
 jest.mock('fs', () => {
@@ -33,21 +53,49 @@ jest.mock('fs', () => {
   };
 });
 
-/** Create a mock ChildProcess with EventEmitter semantics */
-function createMockProcess(exitCode = 0) {
-  const proc = Object.assign(new EventEmitter(), {
-    stdout: Object.assign(new EventEmitter(), { pipe: jest.fn() }),
-    stderr: Object.assign(new EventEmitter(), {}),
-    stdin: new EventEmitter(),
-    exitCode,
-    kill: jest.fn(),
+/** Create a mock mysql2 connection */
+function createMockConnection(options: { connectError?: Error } = {}) {
+  const queryStream = Object.assign(new EventEmitter(), {
+    pause: jest.fn(),
+    resume: jest.fn(),
   });
-  proc.stdout.pipe.mockImplementation((dest: any) => dest);
-  return proc;
+
+  const conn = {
+    connect: jest.fn((cb: (err?: Error) => void) => {
+      if (options.connectError) cb(options.connectError);
+      else cb();
+    }),
+    query: jest.fn((...args: any[]) => {
+      // If called with a callback (queryPromise style), handle it
+      const lastArg = args[args.length - 1];
+      if (typeof lastArg === 'function') {
+        // Default: return empty results. Tests override via mockImplementation.
+        return undefined;
+      }
+      // Streaming style: return object with .stream()
+      return { stream: () => queryStream };
+    }),
+    escapeId: jest.fn((id: string) => `\`${id}\``),
+    destroy: jest.fn(),
+  };
+
+  return { conn, queryStream };
 }
 
-/** Create a mock writable stream with EventEmitter semantics */
-function createMockWriteStream() {
+/** Create a mock gzip transform stream */
+function createMockGzipStream() {
+  const gzipStream = Object.assign(new EventEmitter(), {
+    write: jest.fn().mockReturnValue(true),
+    end: jest.fn((cb?: () => void) => {
+      if (cb) cb();
+    }),
+    pipe: jest.fn(),
+  });
+  return gzipStream;
+}
+
+/** Create a mock writable stream for file output */
+function createMockFileStream() {
   return Object.assign(new EventEmitter(), {
     write: jest.fn(),
     end: jest.fn(),
@@ -55,26 +103,47 @@ function createMockWriteStream() {
 }
 
 /**
- * Set up spawn mocks for a single execMysqldump call.
- * Schedules either a 'finish' (success) or 'error' (failure) on next tick.
+ * Set up mocks for a single execDump call.
+ * Wires up mock query responses for SHOW TABLES, SHOW CREATE TABLE, and SELECT stream.
  */
-function setupSpawnMocks(options: { error?: Error; exitCode?: number } = {}) {
-  const dumpProc = createMockProcess(options.exitCode ?? 0);
-  const gzipProc = createMockProcess(0);
-  const outStream = createMockWriteStream();
+function setupDumpMocks(options: { connectError?: Error; tables?: string[] } = {}) {
+  const tables = options.tables ?? ['test_table'];
+  const { conn, queryStream } = createMockConnection({ connectError: options.connectError });
+  const gzipStream = createMockGzipStream();
+  const fileStream = createMockFileStream();
 
-  mockSpawn.mockReturnValueOnce(dumpProc).mockReturnValueOnce(gzipProc);
-  mockCreateWriteStream.mockReturnValue(outStream);
+  mockCreateConnection.mockReturnValue(conn);
+  mockCreateGzip.mockReturnValue(gzipStream);
+  mockCreateWriteStream.mockReturnValue(fileStream);
+  gzipStream.pipe.mockReturnValue(fileStream);
 
-  process.nextTick(() => {
-    if (options.error) {
-      dumpProc.emit('error', options.error);
-    } else {
-      outStream.emit('finish');
+  // Set up query mock to handle both callback and streaming styles
+  conn.query.mockImplementation((...args: any[]) => {
+    const sql = args[0] as string;
+    const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+
+    if (cb) {
+      // Callback-style query (queryPromise)
+      if (sql === 'SHOW TABLES') {
+        cb(null, tables.map((t) => ({ [`Tables_in_db`]: t })));
+      } else if (sql.startsWith('SHOW CREATE TABLE')) {
+        const tableName = sql.match(/`(\w+)`/)?.[1] ?? 'test_table';
+        cb(null, [{ 'Create Table': `CREATE TABLE \`${tableName}\` (id int)` }]);
+      } else {
+        cb(null, []);
+      }
+      return undefined;
     }
+
+    // Streaming-style query (SELECT *)
+    process.nextTick(() => {
+      queryStream.emit('data', { id: 1, name: 'test' });
+      queryStream.emit('end');
+    });
+    return { stream: () => queryStream };
   });
 
-  return { dumpProc, gzipProc, outStream };
+  return { conn, queryStream, gzipStream, fileStream };
 }
 
 describe('BackupService', () => {
@@ -146,8 +215,8 @@ describe('BackupService', () => {
   });
 
   describe('triggerBackup', () => {
-    it('should execute mysqldump via spawn and return success', async () => {
-      setupSpawnMocks();
+    it('should execute dump via mysql2 and return success', async () => {
+      const { conn } = setupDumpMocks();
       mockFsPromises.stat.mockResolvedValue({ size: 5000 });
       mockFsPromises.readdir.mockResolvedValue([]);
 
@@ -157,11 +226,16 @@ describe('BackupService', () => {
       expect(results[0].success).toBe(true);
       expect(results[0].database).toBe('acore_auth');
       expect(results[0].size).toBe(5000);
-      expect(mockSpawn).toHaveBeenCalledWith(
-        'mysqldump',
-        expect.arrayContaining(['-h', 'localhost']),
+      expect(mockCreateConnection).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: 'localhost',
+          database: 'acore_auth',
+        }),
       );
-      expect(mockSpawn).toHaveBeenCalledWith('gzip');
+      expect(conn.query).toHaveBeenCalledWith(
+        'SHOW TABLES',
+        expect.any(Function),
+      );
     });
 
     it('should throw BadRequestException for invalid database name', async () => {
@@ -171,7 +245,7 @@ describe('BackupService', () => {
     });
 
     it('should report failure and clean up when file is too small', async () => {
-      setupSpawnMocks();
+      setupDumpMocks();
       mockFsPromises.stat.mockResolvedValue({ size: 50 });
       mockFsPromises.readdir.mockResolvedValue([]);
 
@@ -181,8 +255,8 @@ describe('BackupService', () => {
       expect(mockFsPromises.unlink).toHaveBeenCalled();
     });
 
-    it('should report failure and clean up when spawn emits error', async () => {
-      setupSpawnMocks({ error: new Error('mysqldump failed') });
+    it('should report failure and clean up when connection fails', async () => {
+      setupDumpMocks({ connectError: new Error('Connection refused') });
       mockFsPromises.readdir.mockResolvedValue([]);
 
       const results = await service.triggerBackup(['acore_auth']);
@@ -192,7 +266,7 @@ describe('BackupService', () => {
     });
 
     it('should send webhook on success', async () => {
-      setupSpawnMocks();
+      setupDumpMocks();
       mockFsPromises.stat.mockResolvedValue({ size: 5000 });
       mockFsPromises.readdir.mockResolvedValue([]);
 
@@ -207,7 +281,7 @@ describe('BackupService', () => {
     });
 
     it('should send webhook on failure', async () => {
-      setupSpawnMocks({ error: new Error('fail') });
+      setupDumpMocks({ connectError: new Error('fail') });
       mockFsPromises.readdir.mockResolvedValue([]);
 
       await service.triggerBackup(['acore_auth']);
@@ -220,16 +294,25 @@ describe('BackupService', () => {
       );
     });
 
-    it('should report failure when dump exits with non-zero code', async () => {
-      const dumpProc = createMockProcess(1);
-      const gzipProc = createMockProcess(0);
-      const outStream = createMockWriteStream();
+    it('should report failure when query errors during dump', async () => {
+      const { conn } = createMockConnection();
+      const gzipStream = createMockGzipStream();
+      const fileStream = createMockFileStream();
 
-      mockSpawn.mockReturnValueOnce(dumpProc).mockReturnValueOnce(gzipProc);
-      mockCreateWriteStream.mockReturnValue(outStream);
+      mockCreateConnection.mockReturnValue(conn);
+      mockCreateGzip.mockReturnValue(gzipStream);
+      mockCreateWriteStream.mockReturnValue(fileStream);
+      gzipStream.pipe.mockReturnValue(fileStream);
       mockFsPromises.readdir.mockResolvedValue([]);
 
-      process.nextTick(() => outStream.emit('finish'));
+      conn.query.mockImplementation((...args: any[]) => {
+        const cb = typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
+        if (cb) {
+          cb(new Error('Query failed'));
+          return undefined;
+        }
+        return { stream: () => Object.assign(new EventEmitter(), { pause: jest.fn(), resume: jest.fn() }) };
+      });
 
       const results = await service.triggerBackup(['acore_auth']);
 

@@ -7,9 +7,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { spawn, type ChildProcess } from 'child_process';
 import { promises as fs, createWriteStream } from 'fs';
 import { join } from 'path';
+import { createGzip } from 'zlib';
+import mysql from 'mysql2';
 import { WebhookService } from '../webhook/webhook.service.js';
 
 const ALLOWED_DATABASES = [
@@ -18,9 +19,10 @@ const ALLOWED_DATABASES = [
   'acore_playerbots',
   'acore_world',
 ];
-const MYSQLDUMP_TIMEOUT_MS = 300_000; // 5 minutes
+const DUMP_TIMEOUT_MS = 300_000; // 5 minutes
 const SCHEDULE_CHECK_INTERVAL_MS = 60_000; // 1 minute
 const MIN_VALID_BACKUP_SIZE = 100; // bytes
+const INSERT_BATCH_SIZE = 500;
 
 function assertSafeFilename(filename: string): void {
   if (
@@ -94,13 +96,13 @@ export class BackupService implements OnModuleInit {
       const filePath = join(this.backupDir, filename);
 
       try {
-        await this.execMysqldump(db, filePath);
+        await this.execDump(db, filePath);
 
         const stat = await fs.stat(filePath);
         if (stat.size <= MIN_VALID_BACKUP_SIZE) {
           await fs.unlink(filePath).catch(() => {});
           throw new Error(
-            `Backup file too small (${stat.size} bytes) — mysqldump likely failed`,
+            `Backup file too small (${stat.size} bytes) — dump likely failed`,
           );
         }
         results.push({
@@ -139,59 +141,168 @@ export class BackupService implements OnModuleInit {
     return results;
   }
 
-  private execMysqldump(db: string, filePath: string): Promise<void> {
+  private execDump(db: string, filePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const settle = (err?: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        conn.destroy();
+        if (err) reject(err);
+        else resolve();
+      };
+
+      const conn = mysql.createConnection({
+        host: this.dbHost,
+        port: Number(this.dbPort),
+        user: this.dbUser,
+        password: this.dbPassword,
+        database: db,
+        dateStrings: true,
+        bigNumberStrings: true,
+      });
+
       const timer = setTimeout(() => {
-        dump.kill();
-        gzip.kill();
-        reject(new Error(`Backup timed out after ${MYSQLDUMP_TIMEOUT_MS}ms`));
-      }, MYSQLDUMP_TIMEOUT_MS);
+        settle(new Error(`Backup timed out after ${DUMP_TIMEOUT_MS}ms`));
+      }, DUMP_TIMEOUT_MS);
 
-      const dump = spawn('mysqldump', [
-        '--protocol=tcp',
-        '-h',
-        this.dbHost,
-        '-P',
-        this.dbPort,
-        '-u',
-        this.dbUser,
-        `-p${this.dbPassword}`,
-        db,
-      ]);
-
-      const gzip = spawn('gzip');
+      const gzip = createGzip();
       const outStream = createWriteStream(filePath);
+      gzip.pipe(outStream);
 
-      dump.stdout.pipe(gzip.stdin);
-      gzip.stdout.pipe(outStream);
+      outStream.on('error', (err) => settle(err));
+      gzip.on('error', (err) => settle(err));
 
-      const stderrChunks: Buffer[] = [];
-      dump.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
+      conn.connect((connErr) => {
+        if (connErr) return settle(connErr);
 
-      dump.on('error', (err) => {
-        clearTimeout(timer);
-        reject(err);
+        this.writeDump(conn, db, gzip)
+          .then(() => {
+            gzip.end(() => settle());
+          })
+          .catch((err) => settle(err));
       });
-      gzip.on('error', (err) => {
-        clearTimeout(timer);
-        reject(err);
-      });
+    });
+  }
 
-      outStream.on('finish', () => {
-        clearTimeout(timer);
-        if (dump.exitCode !== 0) {
-          const stderr = Buffer.concat(stderrChunks).toString().trim();
-          reject(
-            new Error(`mysqldump exited with code ${dump.exitCode}: ${stderr}`),
-          );
-        } else {
-          resolve();
+  private async writeDump(
+    conn: mysql.Connection,
+    db: string,
+    out: NodeJS.WritableStream,
+  ): Promise<void> {
+    out.write(
+      `-- Pure Node.js dump of ${db}\n` +
+        `-- Generated: ${new Date().toISOString()}\n\n` +
+        `/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;\n` +
+        `/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;\n` +
+        `/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;\n` +
+        `/*!40101 SET NAMES utf8mb4 */;\n` +
+        `/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;\n` +
+        `/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;\n` +
+        `/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;\n\n`,
+    );
+
+    const tables = await this.queryPromise<Array<Record<string, string>>>(
+      conn,
+      'SHOW TABLES',
+    );
+
+    for (const row of tables) {
+      const tableName = Object.values(row)[0];
+      await this.dumpTable(conn, tableName, out);
+    }
+
+    out.write(
+      `\n/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;\n` +
+        `/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;\n` +
+        `/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;\n` +
+        `/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;\n` +
+        `/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;\n` +
+        `/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;\n`,
+    );
+  }
+
+  private async dumpTable(
+    conn: mysql.Connection,
+    table: string,
+    out: NodeJS.WritableStream,
+  ): Promise<void> {
+    const escapedTable = conn.escapeId(table);
+
+    const createResult = await this.queryPromise<Array<Record<string, string>>>(
+      conn,
+      `SHOW CREATE TABLE ${escapedTable}`,
+    );
+    const createSql = createResult[0]?.['Create Table'];
+    if (!createSql) return;
+
+    out.write(`--\n-- Table structure for table ${escapedTable}\n--\n\n`);
+    out.write(`DROP TABLE IF EXISTS ${escapedTable};\n`);
+    out.write(`${createSql};\n\n`);
+
+    out.write(`LOCK TABLES ${escapedTable} WRITE;\n`);
+    await this.streamTableData(conn, table, out);
+    out.write(`UNLOCK TABLES;\n\n`);
+  }
+
+  private streamTableData(
+    conn: mysql.Connection,
+    table: string,
+    out: NodeJS.WritableStream,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const escapedTable = conn.escapeId(table);
+      const query = conn.query(`SELECT * FROM ${escapedTable}`);
+      const stream = query.stream();
+
+      let batch: string[] = [];
+      let hasData = false;
+
+      stream.on('data', (row: Record<string, unknown>) => {
+        hasData = true;
+        batch.push(
+          `(${Object.values(row).map((v) => this.escapeValue(v)).join(',')})`,
+        );
+
+        if (batch.length >= INSERT_BATCH_SIZE) {
+          const sql = `INSERT INTO ${escapedTable} VALUES\n${batch.join(',\n')};\n`;
+          batch = [];
+          if (!out.write(sql)) {
+            stream.pause();
+            out.once('drain', () => stream.resume());
+          }
         }
       });
 
-      outStream.on('error', (err) => {
-        clearTimeout(timer);
-        reject(err);
+      stream.on('end', () => {
+        if (batch.length > 0) {
+          out.write(
+            `INSERT INTO ${escapedTable} VALUES\n${batch.join(',\n')};\n`,
+          );
+        }
+        if (!hasData) {
+          out.write(`-- No data for table ${escapedTable}\n`);
+        }
+        resolve();
+      });
+
+      stream.on('error', reject);
+    });
+  }
+
+  private escapeValue(value: unknown): string {
+    if (value === null || value === undefined) return 'NULL';
+    if (Buffer.isBuffer(value))
+      return `X'${(value as Buffer).toString('hex')}'`;
+    return mysql.escape(value);
+  }
+
+  private queryPromise<T>(conn: mysql.Connection, sql: string): Promise<T> {
+    return new Promise((resolve, reject) => {
+      conn.query(sql, (err, results) => {
+        if (err) reject(err);
+        else resolve(results as T);
       });
     });
   }
