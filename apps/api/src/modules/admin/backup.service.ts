@@ -30,7 +30,8 @@ const RESTORE_TIMEOUT_MS = 600_000; // 10 minutes
 const SCHEDULE_CHECK_INTERVAL_MS = 60_000; // 1 minute
 const MIN_VALID_BACKUP_SIZE = 100; // bytes
 const INSERT_BATCH_SIZE = 500;
-const SERVER_STOP_TIMEOUT_S = 300;
+const SERVER_STOP_TIMEOUT_S = 120;
+const STOP_MAX_RETRIES = 2;
 const SERVER_SETTLE_MS = 3000;
 
 const ALLOWED_STATEMENT_PREFIXES = [
@@ -958,17 +959,48 @@ export class BackupService implements OnModuleInit {
 
   private async stopServers(op?: RestoreProgress): Promise<void> {
     // Stop worldserver first — this triggers in-memory data flush to MySQL
+    // Retry if it doesn't stop on the first attempt
     if (op) this.updateStep(op, 'stop_worldserver', 'in_progress');
-    try {
-      await this.dockerService.stopContainer(
+    let wsStopped = false;
+    for (let attempt = 0; attempt <= STOP_MAX_RETRIES; attempt++) {
+      try {
+        await this.dockerService.stopContainer(
+          'ac-worldserver',
+          SERVER_STOP_TIMEOUT_S,
+        );
+      } catch (err) {
+        if (attempt === STOP_MAX_RETRIES) {
+          if (op)
+            this.updateStep(op, 'stop_worldserver', 'failed', String(err));
+          throw new Error(
+            `Failed to stop worldserver after ${attempt + 1} attempts: ${err}`,
+          );
+        }
+        this.logger.warn(
+          `Worldserver stop attempt ${attempt + 1} failed, retrying...`,
+        );
+        continue;
+      }
+      // Verify it actually stopped
+      const state = await this.dockerService.getContainerState(
         'ac-worldserver',
-        SERVER_STOP_TIMEOUT_S,
       );
-      if (op) this.updateStep(op, 'stop_worldserver', 'done');
-    } catch (err) {
-      if (op) this.updateStep(op, 'stop_worldserver', 'failed', String(err));
-      throw new Error(`Failed to stop worldserver: ${err}`);
+      if (state.state !== 'running') {
+        wsStopped = true;
+        break;
+      }
+      if (attempt < STOP_MAX_RETRIES) {
+        this.logger.warn(
+          `Worldserver still running after stop attempt ${attempt + 1}, retrying...`,
+        );
+      }
     }
+    if (!wsStopped) {
+      const msg = 'Worldserver still running after all stop attempts';
+      if (op) this.updateStep(op, 'stop_worldserver', 'failed', msg);
+      throw new Error(msg);
+    }
+    if (op) this.updateStep(op, 'stop_worldserver', 'done');
 
     if (op) this.updateStep(op, 'stop_authserver', 'in_progress');
     try {
