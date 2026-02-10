@@ -197,6 +197,18 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Suppress auto-restart (used during restore to prevent fighting) */
+  suppressAutoRestart(): void {
+    this.autoRestartEnabled = false;
+    this.logger.log('Auto-restart suppressed');
+  }
+
+  /** Resume auto-restart by reloading the persisted setting */
+  resumeAutoRestart(): void {
+    this.loadSettingsOverrides();
+    this.logger.log(`Auto-restart resumed (enabled: ${this.autoRestartEnabled})`);
+  }
+
   /** Clear crash loop state for a container (called on manual restart) */
   clearCrashLoop(container: string): void {
     const tracker = this.trackers[container as ContainerName];

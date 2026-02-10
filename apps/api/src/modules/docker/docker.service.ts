@@ -81,14 +81,14 @@ export class DockerService {
   }
 
   /** Raw POST request to the Docker Engine API via Unix socket. */
-  private dockerPost(path: string): Promise<Buffer> {
+  private dockerPost(path: string, timeoutMs = DOCKER_REQUEST_TIMEOUT_MS): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const req = http.request(
         {
           socketPath: this.socketPath,
           path,
           method: 'POST',
-          timeout: DOCKER_REQUEST_TIMEOUT_MS,
+          timeout: timeoutMs,
         },
         (res) => {
           const chunks: Buffer[] = [];
@@ -174,14 +174,53 @@ export class DockerService {
   }
 
   /** Restart a container. Returns the new container state. */
-  async restartContainer(name: string): Promise<ContainerState> {
+  async restartContainer(name: string, timeout = 10): Promise<ContainerState> {
     this.validateContainer(name);
+    const httpTimeoutMs = (timeout + 10) * 1000;
     try {
-      await this.dockerPost(`/v1.45/containers/${name}/restart?t=10`);
+      await this.dockerPost(`/v1.45/containers/${name}/restart?t=${timeout}`, httpTimeoutMs);
       this.logger.log(`Container ${name} restarted`);
     } catch (err) {
       this.logger.error(`Failed to restart container ${name}: ${err}`);
       throw err;
+    }
+    return this.getContainerState(name);
+  }
+
+  /** Stop a container. Returns the new container state. */
+  async stopContainer(name: string, timeout = 30): Promise<ContainerState> {
+    this.validateContainer(name);
+    // HTTP timeout = Docker stop timeout + 10s buffer for Docker overhead
+    const httpTimeoutMs = (timeout + 10) * 1000;
+    try {
+      await this.dockerPost(`/v1.45/containers/${name}/stop?t=${timeout}`, httpTimeoutMs);
+      this.logger.log(`Container ${name} stopped`);
+    } catch (err) {
+      // 304 = already stopped — not an error
+      if (err instanceof Error && err.message.includes('304')) {
+        this.logger.log(`Container ${name} already stopped`);
+      } else {
+        this.logger.error(`Failed to stop container ${name}: ${err}`);
+        throw err;
+      }
+    }
+    return this.getContainerState(name);
+  }
+
+  /** Start a container. Returns the new container state. */
+  async startContainer(name: string): Promise<ContainerState> {
+    this.validateContainer(name);
+    try {
+      await this.dockerPost(`/v1.45/containers/${name}/start`);
+      this.logger.log(`Container ${name} started`);
+    } catch (err) {
+      // 304 = already running — not an error
+      if (err instanceof Error && err.message.includes('304')) {
+        this.logger.log(`Container ${name} already running`);
+      } else {
+        this.logger.error(`Failed to start container ${name}: ${err}`);
+        throw err;
+      }
     }
     return this.getContainerState(name);
   }

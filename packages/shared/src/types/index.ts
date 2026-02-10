@@ -306,3 +306,63 @@ export interface EquippedItemSlot {
   slot: number;
   item: ItemTooltipData | null;
 }
+
+export interface BackupSetFile {
+  filename: string;
+  database: string;
+  size: number;
+}
+
+export interface BackupSet {
+  id: string;
+  createdAt: string;
+  databases: string[];
+  files: BackupSetFile[];
+  totalSize: number;
+  isPreRestore: boolean;
+  label: string;
+}
+
+export interface SetValidationResult {
+  valid: boolean;
+  setId: string;
+  files: {
+    filename: string;
+    database: string;
+    valid: boolean;
+    tableCount: number;
+    statementCount: number;
+    tables: string[];
+    errors: string[];
+  }[];
+  generatedAt: string | null;
+}
+
+export interface SetRestoreResult {
+  success: boolean;
+  setId: string;
+  databases: string[];
+  filesRestored: number;
+  totalTablesRestored: number;
+  totalStatementsExecuted: number;
+  preRestoreSetId: string | null;
+  durationMs: number;
+  errors: { database: string; error: string }[];
+}
+
+export type RestoreStepStatus = 'pending' | 'in_progress' | 'done' | 'failed' | 'skipped';
+
+export interface RestoreStep {
+  id: string;
+  label: string;
+  status: RestoreStepStatus;
+  error?: string;
+}
+
+export interface RestoreProgress {
+  operationId: string;
+  setId: string;
+  status: 'running' | 'completed' | 'failed' | 'cancelled';
+  steps: RestoreStep[];
+  result?: SetRestoreResult;
+}

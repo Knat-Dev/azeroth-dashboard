@@ -29,7 +29,7 @@ export class WebhookService {
     this.discordUrl = configService.get<string>('DISCORD_WEBHOOK_URL') || null;
     const events =
       configService.get<string>('WEBHOOK_EVENTS') ||
-      'crash,restart_failed,crash_loop,backup_success,backup_failed';
+      'crash,restart_failed,crash_loop,backup_success,backup_failed,restore_success,restore_failed';
     this.enabledEvents = new Set(events.split(',').map((e) => e.trim()));
   }
 
