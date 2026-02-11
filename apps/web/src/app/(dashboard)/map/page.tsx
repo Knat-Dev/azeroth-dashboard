@@ -168,14 +168,16 @@ export default function MapPage() {
         ))}
       </div>
 
-      {/* Map */}
-      <div className="flex-1 min-h-0 rounded-xl glass overflow-hidden">
-        <WorldMap
-          config={selectedConfig}
-          players={filteredPlayers}
-          focusGuid={focusGuid}
-          highlightGuids={highlightGuids}
-        />
+      {/* Map — maintain the native 1024×768 (4:3) aspect ratio */}
+      <div className="flex-1 min-h-0 flex justify-center overflow-hidden">
+        <div className="h-full max-w-full rounded-xl glass overflow-hidden" style={{ aspectRatio: "1024 / 768" }}>
+          <WorldMap
+            config={selectedConfig}
+            players={filteredPlayers}
+            focusGuid={focusGuid}
+            highlightGuids={highlightGuids}
+          />
+        </div>
       </div>
     </div>
   );

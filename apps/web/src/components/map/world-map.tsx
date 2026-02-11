@@ -109,7 +109,12 @@ function MapFocuser({
     const match = markers.find((m) => m.player.guid === focusGuid);
     if (!match) return;
     lastFocused.current = focusGuid;
-    map.flyTo([match.pixelY, match.pixelX], 3, { duration: 0.8 });
+    // Delay slightly so BoundsEnforcer can finish initializing the map
+    // after a continent switch (full re-mount via key prop).
+    const timer = setTimeout(() => {
+      map.flyTo([match.pixelY, match.pixelX], 3, { duration: 0.8 });
+    }, 150);
+    return () => clearTimeout(timer);
   }, [focusGuid, markers, map]);
 
   return null;
@@ -170,13 +175,21 @@ export function WorldMap({ config, players, focusGuid, highlightGuids }: WorldMa
     });
   }, [config]);
 
+  // If a player is focused, start the map centered on them instead of the full continent
+  const focusedMarker = focusGuid !== undefined
+    ? markers.find((m) => m.player.guid === focusGuid)
+    : undefined;
+
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg [&_.leaflet-container]:bg-[#0a0e17] [&_.leaflet-control-zoom_a]:bg-card [&_.leaflet-control-zoom_a]:text-foreground [&_.leaflet-control-zoom_a]:border-border">
+    <div className="isolate relative h-full w-full overflow-hidden rounded-lg [&_.leaflet-container]:bg-[#0a0e17] [&_.leaflet-control-zoom_a]:bg-card [&_.leaflet-control-zoom_a]:text-foreground [&_.leaflet-control-zoom_a]:border-border">
       {/* key forces full re-mount when switching continents */}
       <MapContainer
         key={config.key}
         crs={CRS.Simple}
-        bounds={contentBounds}
+        {...(focusedMarker
+          ? { center: [focusedMarker.pixelY, focusedMarker.pixelX] as [number, number], zoom: 3 }
+          : { bounds: contentBounds }
+        )}
         maxBounds={contentBounds}
         maxBoundsViscosity={1.0}
         minZoom={0}
