@@ -844,8 +844,8 @@ describe('BackupService', () => {
       await service.onModuleInit();
 
       const schedule = await service.getSchedule();
-      expect(schedule.enabled).toBe(true);
-      expect(schedule.cron).toBe('0 5 * * *');
+      expect(schedule!.enabled).toBe(true);
+      expect(schedule!.cron).toBe('0 5 * * *');
     });
 
     it('should use defaults when schedule file is missing', async () => {
@@ -854,8 +854,7 @@ describe('BackupService', () => {
       await service.onModuleInit();
 
       const schedule = await service.getSchedule();
-      expect(schedule.enabled).toBe(false);
-      expect(schedule.cron).toBe('0 3 * * *');
+      expect(schedule).toBeNull();
     });
   });
 

@@ -65,11 +65,42 @@ function formatSize(bytes: number) {
 
 const ALL_DBS = ["acore_auth", "acore_characters", "acore_playerbots", "acore_world"];
 
+function describeCron(cron: string): string {
+  const parts = cron.trim().split(/\s+/);
+  if (parts.length !== 5) return cron;
+  const min = parts[0]!;
+  const hour = parts[1]!;
+  const dom = parts[2]!;
+  const mon = parts[3]!;
+  const dow = parts[4]!;
+  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const pad = (v: string) => v.padStart(2, "0");
+
+  // Every N minutes
+  if (min.startsWith("*/") && hour === "*" && dom === "*" && mon === "*" && dow === "*") {
+    return `Every ${min.slice(2)} min`;
+  }
+  // Every N hours
+  if (min !== "*" && hour.startsWith("*/") && dom === "*" && mon === "*" && dow === "*") {
+    return `Every ${hour.slice(2)}h at :${pad(min)}`;
+  }
+  // Daily at HH:MM
+  if (min !== "*" && hour !== "*" && !hour.includes("/") && !hour.includes(",") && dom === "*" && mon === "*" && dow === "*") {
+    return `Daily at ${pad(hour)}:${pad(min)}`;
+  }
+  // Weekly on specific days
+  if (min !== "*" && hour !== "*" && dom === "*" && mon === "*" && dow !== "*" && !dow.includes("/")) {
+    const dayNames = dow.split(",").map(d => DAYS[parseInt(d)] ?? d).join(", ");
+    return `${dayNames} at ${pad(hour)}:${pad(min)}`;
+  }
+  return cron;
+}
+
 export default function BackupsPage() {
   const [sets, setSets] = useState<BackupSet[]>([]);
   const [selectedDbs, setSelectedDbs] = useState<string[]>(["acore_auth", "acore_characters"]);
   const [backing, setBacking] = useState(false);
-  const [, setSchedule] = useState<Schedule | null>(null);
+  const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [scheduleEdit, setScheduleEdit] = useState<Schedule | null>(null);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">("success");
@@ -121,7 +152,7 @@ export default function BackupsPage() {
   }
 
   function loadSchedule() {
-    api.get<Schedule>("/admin/backups/schedule").then((s) => {
+    api.get<Schedule | null>("/admin/backups/schedule").then((s) => {
       setSchedule(s);
       setScheduleEdit(s);
     }).catch(() => {});
@@ -233,7 +264,17 @@ export default function BackupsPage() {
         <h1 className="text-2xl font-bold text-foreground">Database Backups</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowSchedule(true)}
+            onClick={() => {
+              if (!scheduleEdit) {
+                setScheduleEdit({
+                  enabled: false,
+                  cron: "0 3 * * *",
+                  databases: ["acore_auth", "acore_characters"],
+                  retentionDays: 30,
+                });
+              }
+              setShowSchedule(true);
+            }}
             className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary"
           >
             Schedule
@@ -274,6 +315,42 @@ export default function BackupsPage() {
         </div>
       </div>
 
+      {schedule && (
+        <button
+          onClick={() => setShowSchedule(true)}
+          className={cn(
+            "mb-4 shrink-0 flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm text-left w-full transition-colors",
+            schedule.enabled
+              ? "border-green-500/30 bg-green-500/5 hover:bg-green-500/10"
+              : "border-border bg-secondary/50 hover:bg-secondary"
+          )}
+        >
+          <span className={cn(
+            "flex h-2 w-2 shrink-0 rounded-full",
+            schedule.enabled ? "bg-green-400" : "bg-muted-foreground/40"
+          )} />
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+            <span className={cn(
+              "font-medium whitespace-nowrap",
+              schedule.enabled ? "text-green-400" : "text-muted-foreground"
+            )}>
+              {schedule.enabled ? describeCron(schedule.cron) : "Schedule disabled"}
+            </span>
+            {schedule.enabled && (
+              <>
+                <span className="text-muted-foreground">
+                  {schedule.databases.length} database{schedule.databases.length !== 1 ? "s" : ""}
+                </span>
+                <span className="text-muted-foreground">
+                  {schedule.retentionDays}d retention
+                </span>
+              </>
+            )}
+          </span>
+          <span className="ml-auto text-xs text-muted-foreground shrink-0">Edit</span>
+        </button>
+      )}
+
       {message && (
         <div className={`mb-4 shrink-0 rounded-lg px-4 py-3 text-sm ${
           messageType === "error"
@@ -286,200 +363,195 @@ export default function BackupsPage() {
 
       {/* Backup Sets Table — fills remaining space */}
       <div className="flex-1 min-h-0 overflow-y-auto rounded-xl border border-border bg-card">
-        {/* Restore progress panel */}
-        {progress && (
-          <div className={`border-b p-6 ${
-            progress.status === "completed"
-              ? "border-green-500/30 bg-green-500/10"
-              : progress.status === "failed" || progress.status === "cancelled"
-              ? "border-destructive/30 bg-destructive/10"
-              : "border-blue-500/30 bg-blue-500/10"
-          }`}>
-            <div className="mb-3 flex items-center justify-between">
-              <span className={`text-lg font-semibold ${
-                progress.status === "completed" ? "text-green-400"
-                  : progress.status === "failed" ? "text-destructive"
-                  : progress.status === "cancelled" ? "text-amber-400"
-                  : "text-blue-400"
-              }`}>
-                {progress.status === "completed" ? "Restore Successful"
-                  : progress.status === "failed" ? "Restore Failed"
-                  : progress.status === "cancelled" ? "Restore Cancelled"
-                  : "Restoring..."}
-              </span>
-              {progress.status === "running" && restoreOp && (
-                <button
-                  onClick={async () => {
-                    try {
-                      await api.post(`/admin/backups/restore-operations/${restoreOp.operationId}/cancel`);
-                    } catch { /* ignore */ }
-                  }}
-                  className="rounded-lg border border-destructive/30 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-            <div className="space-y-2">
-              {progress.steps.map((step) => (
-                <div key={step.id} className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
-                    {step.status === "done" && (
-                      <svg className="h-4 w-4 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                    {step.status === "failed" && (
-                      <svg className="h-4 w-4 text-destructive" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                    {step.status === "in_progress" && (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
-                    )}
-                    {(step.status === "pending" || step.status === "skipped") && (
-                      <div className="h-3 w-3 rounded-full border-2 border-muted-foreground/30" />
-                    )}
-                  </span>
-                  <div className="min-w-0">
-                    <span className={`text-sm ${
-                      step.status === "done" ? "text-green-400"
-                        : step.status === "failed" ? "text-destructive"
-                        : step.status === "in_progress" ? "text-foreground"
-                        : "text-muted-foreground"
-                    }`}>
-                      {step.label}
-                      {step.status === "in_progress" && elapsed > 0 && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
-                          {step.id.startsWith("stop_") && " / 6:00"}
-                          {step.id.startsWith("pre_backup_") && " / 5:00"}
-                          {step.id.startsWith("restore_") && " / 10:00"}
-                        </span>
-                      )}
-                    </span>
-                    {step.error && (
-                      <p className="mt-0.5 text-xs text-destructive break-all">{step.error}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {progress.status === "completed" && progress.result && (
-              <div className="mt-4 space-y-1 text-sm text-muted-foreground border-t border-green-500/20 pt-3">
-                <p>Databases: {progress.result.databases.join(", ")}</p>
-                <p>
-                  {progress.result.totalTablesRestored} tables, {progress.result.totalStatementsExecuted} statements
-                  in {(progress.result.durationMs / 1000).toFixed(1)}s
-                </p>
-                {progress.result.preRestoreSetId && (
-                  <p>Pre-restore backup saved as set: {progress.result.preRestoreSetId}</p>
-                )}
-              </div>
-            )}
-            {progress.status === "cancelled" && progress.result && (
-              <div className="mt-4 space-y-1 text-sm border-t border-amber-500/20 pt-3">
-                <p className="text-muted-foreground">
-                  Restore was cancelled. Servers have been restarted.
-                </p>
-                {progress.result.preRestoreSetId && (
-                  <p className="text-muted-foreground">
-                    Pre-restore backup available: {progress.result.preRestoreSetId}
-                  </p>
-                )}
-              </div>
-            )}
-            {progress.status === "failed" && progress.result && (
-              <div className="mt-4 space-y-1 text-sm border-t border-destructive/20 pt-3">
-                {progress.result.preRestoreSetId && (
-                  <p className="text-muted-foreground">
-                    Pre-restore backup available: {progress.result.preRestoreSetId}
-                  </p>
-                )}
-                {progress.result.errors.length > 0 && (
-                  <div>
-                    {progress.result.errors.map((e, i) => (
-                      <p key={i} className="text-destructive text-xs">{e.database}: {e.error}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {(progress.status === "completed" || progress.status === "failed" || progress.status === "cancelled") && (
-              <button
-                onClick={() => setProgress(null)}
-                className="mt-3 text-xs text-muted-foreground hover:text-foreground"
-              >
-                Dismiss
-              </button>
-            )}
-          </div>
-        )}
-
         {sets.length === 0 ? (
           <p className="p-4 text-muted-foreground">No backups found.</p>
         ) : (
-          sets.map((set) => (
-            <div
-              key={set.id}
-              className={cn(
-                "flex items-center justify-between gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-secondary/50 transition-colors",
-                set.isPreRestore && "border-l-4 border-l-amber-500"
-              )}
-            >
-              {/* Info — wraps freely */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
-                <span className="text-sm text-foreground whitespace-nowrap">
-                  {new Date(set.createdAt).toLocaleString()}
-                </span>
-                <span className={cn(
-                  "rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-                  set.isPreRestore
-                    ? "bg-amber-500/20 text-amber-400"
-                    : "bg-secondary text-muted-foreground"
-                )}>
-                  {set.label}
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  {set.databases.map((db) => (
-                    <span key={db} className="rounded-md bg-secondary px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
-                      {db}
+          sets.map((set) => {
+            const isRestoring = progress && progress.setId === set.id;
+            const isFinished = isRestoring && (progress.status === "completed" || progress.status === "failed" || progress.status === "cancelled");
+            return (
+              <div
+                key={set.id}
+                className={cn(
+                  "border-b border-border last:border-b-0 transition-colors",
+                  set.isPreRestore && "border-l-4 border-l-amber-500",
+                  isRestoring && progress.status === "running" && "bg-blue-500/10",
+                  isRestoring && progress.status === "completed" && "bg-green-500/10",
+                  isRestoring && progress.status === "failed" && "bg-destructive/10",
+                  isRestoring && progress.status === "cancelled" && "bg-amber-500/10",
+                  !isRestoring && "hover:bg-secondary/50"
+                )}
+              >
+                {/* Row header */}
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  {/* Info */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
+                    <span className="text-sm text-foreground whitespace-nowrap">
+                      {new Date(set.createdAt).toLocaleString()}
                     </span>
-                  ))}
+                    <span className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+                      set.isPreRestore
+                        ? "bg-amber-500/20 text-amber-400"
+                        : "bg-secondary text-muted-foreground"
+                    )}>
+                      {set.label}
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {set.databases.map((db) => (
+                        <span key={db} className="rounded-md bg-secondary px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
+                          {db}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatSize(set.totalSize)}
+                    </span>
+                  </div>
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isRestoring && progress.status === "running" && restoreOp ? (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await api.post(`/admin/backups/restore-operations/${restoreOp.operationId}/cancel`);
+                          } catch { /* ignore */ }
+                        }}
+                        className="rounded-lg border border-destructive/30 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
+                      >
+                        Cancel
+                      </button>
+                    ) : isFinished ? (
+                      <button
+                        onClick={() => setProgress(null)}
+                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      >
+                        Dismiss
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setConfirmRestore(set)}
+                          disabled={restoreOp !== null}
+                          className="rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                        >
+                          Restore
+                        </button>
+                        <button
+                          onClick={() => {
+                            for (const file of set.files) {
+                              handleDownloadFile(file.filename);
+                            }
+                          }}
+                          className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary"
+                          title="Download"
+                        >
+                          DL
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(set)}
+                          className="rounded-lg border border-destructive/30 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {formatSize(set.totalSize)}
-                </span>
+
+                {/* Inline restore steps */}
+                {isRestoring && (
+                  <div className="px-4 pb-3 space-y-1.5">
+                    {progress.steps.map((step) => (
+                      <div key={step.id} className="flex items-center gap-2">
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                          {step.status === "done" && (
+                            <svg className="h-3.5 w-3.5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {step.status === "failed" && (
+                            <svg className="h-3.5 w-3.5 text-destructive" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {step.status === "in_progress" && (
+                            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                          )}
+                          {(step.status === "pending" || step.status === "skipped") && (
+                            <div className="h-2.5 w-2.5 rounded-full border-2 border-muted-foreground/30" />
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <span className={cn("text-sm",
+                            step.status === "done" && "text-green-400",
+                            step.status === "failed" && "text-destructive",
+                            step.status === "in_progress" && "text-foreground",
+                            (step.status === "pending" || step.status === "skipped") && "text-muted-foreground"
+                          )}>
+                            {step.label}
+                            {step.status === "in_progress" && elapsed > 0 && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
+                                {step.id.startsWith("stop_") && " / 6:00"}
+                                {step.id.startsWith("pre_backup_") && " / 5:00"}
+                                {step.id.startsWith("restore_") && " / 10:00"}
+                              </span>
+                            )}
+                          </span>
+                          {step.error && (
+                            <p className="mt-0.5 text-xs text-destructive break-all">{step.error}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Result summary */}
+                    {progress.status === "completed" && progress.result && (
+                      <div className="space-y-1 text-sm text-muted-foreground border-t border-green-500/20 pt-2 mt-2">
+                        <p>Databases: {progress.result.databases.join(", ")}</p>
+                        <p>
+                          {progress.result.totalTablesRestored} tables, {progress.result.totalStatementsExecuted} statements
+                          in {(progress.result.durationMs / 1000).toFixed(1)}s
+                        </p>
+                        {progress.result.preRestoreSetId && (
+                          <p>Pre-restore backup saved as set: {progress.result.preRestoreSetId}</p>
+                        )}
+                      </div>
+                    )}
+                    {progress.status === "cancelled" && progress.result && (
+                      <div className="space-y-1 text-sm border-t border-amber-500/20 pt-2 mt-2">
+                        <p className="text-muted-foreground">
+                          Restore was cancelled. Servers have been restarted.
+                        </p>
+                        {progress.result.preRestoreSetId && (
+                          <p className="text-muted-foreground">
+                            Pre-restore backup available: {progress.result.preRestoreSetId}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {progress.status === "failed" && progress.result && (
+                      <div className="space-y-1 text-sm border-t border-destructive/20 pt-2 mt-2">
+                        {progress.result.preRestoreSetId && (
+                          <p className="text-muted-foreground">
+                            Pre-restore backup available: {progress.result.preRestoreSetId}
+                          </p>
+                        )}
+                        {progress.result.errors.length > 0 && (
+                          <div>
+                            {progress.result.errors.map((e, i) => (
+                              <p key={i} className="text-destructive text-xs">{e.database}: {e.error}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              {/* Actions — always stays together on the right */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => setConfirmRestore(set)}
-                  disabled={restoreOp !== null}
-                  className="rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                >
-                  Restore
-                </button>
-                <button
-                  onClick={() => {
-                    for (const file of set.files) {
-                      handleDownloadFile(file.filename);
-                    }
-                  }}
-                  className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-secondary"
-                  title="Download"
-                >
-                  DL
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(set)}
-                  className="rounded-lg border border-destructive/30 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -629,19 +701,39 @@ export default function BackupsPage() {
                     </label>
                   ))}
                 </div>
-                <div className="flex gap-2 justify-end pt-2">
-                  <button
-                    onClick={() => setShowSchedule(false)}
-                    className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => { handleSaveSchedule(); setShowSchedule(false); }}
-                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    Save Schedule
-                  </button>
+                <div className="flex items-center gap-2 pt-2">
+                  {schedule && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.delete("/admin/backups/schedule");
+                          setSchedule(null);
+                          setScheduleEdit(null);
+                          setShowSchedule(false);
+                          showMessage("Schedule deleted");
+                        } catch {
+                          showMessage("Failed to delete schedule", "error");
+                        }
+                      }}
+                      className="rounded-lg border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+                    >
+                      Delete
+                    </button>
+                  )}
+                  <div className="flex gap-2 ml-auto">
+                    <button
+                      onClick={() => setShowSchedule(false)}
+                      className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => { handleSaveSchedule(); setShowSchedule(false); }}
+                      className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                    >
+                      Save Schedule
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

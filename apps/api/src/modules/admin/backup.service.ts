@@ -185,7 +185,7 @@ export class BackupService implements OnModuleInit {
   private readonly dbUser: string;
   private readonly dbPassword: string;
   private readonly retentionDays: number;
-  private scheduleConfig: BackupScheduleConfig;
+  private scheduleConfig: BackupScheduleConfig | null = null;
   private scheduleTimer: ReturnType<typeof setInterval> | null = null;
 
   private readonly busyDatabases = new Set<string>();
@@ -210,12 +210,6 @@ export class BackupService implements OnModuleInit {
     this.dbUser = configService.get<string>('DB_USER', 'root');
     this.dbPassword = configService.get<string>('DB_ROOT_PASSWORD', 'password');
     this.retentionDays = configService.get<number>('backup.retentionDays', 30);
-    this.scheduleConfig = {
-      enabled: false,
-      cron: '0 3 * * *',
-      databases: ['acore_auth', 'acore_characters'],
-      retentionDays: this.retentionDays,
-    };
   }
 
   async onModuleInit() {
@@ -561,7 +555,7 @@ export class BackupService implements OnModuleInit {
     };
   }
 
-  async getSchedule(): Promise<BackupScheduleConfig> {
+  async getSchedule(): Promise<BackupScheduleConfig | null> {
     return this.scheduleConfig;
   }
 
@@ -573,6 +567,19 @@ export class BackupService implements OnModuleInit {
     await this.saveScheduleConfig();
     this.setupScheduleTimer();
     return this.scheduleConfig;
+  }
+
+  async deleteSchedule() {
+    if (this.scheduleTimer) {
+      clearInterval(this.scheduleTimer);
+      this.scheduleTimer = null;
+    }
+    this.scheduleConfig = null;
+    try {
+      await fs.unlink(join(this.backupDir, 'schedule.json'));
+    } catch {
+      // File may not exist
+    }
   }
 
   private async loadScheduleConfig() {
@@ -601,13 +608,14 @@ export class BackupService implements OnModuleInit {
       this.scheduleTimer = null;
     }
 
-    if (!this.scheduleConfig.enabled) return;
+    if (!this.scheduleConfig?.enabled) return;
 
+    const config = this.scheduleConfig;
     // Simple interval-based scheduling (check every minute)
     this.scheduleTimer = setInterval(() => {
       const now = new Date();
-      if (this.matchesCron(now, this.scheduleConfig.cron)) {
-        this.triggerBackup(this.scheduleConfig.databases).catch((err) =>
+      if (this.matchesCron(now, config.cron)) {
+        this.triggerBackup(config.databases).catch((err) =>
           this.logger.error(`Scheduled backup failed: ${err}`),
         );
       }
@@ -649,7 +657,7 @@ export class BackupService implements OnModuleInit {
 
   private async cleanOldBackups() {
     const sets = await this.listBackups();
-    const cutoff = Date.now() - this.scheduleConfig.retentionDays * 86400000;
+    const cutoff = Date.now() - (this.scheduleConfig?.retentionDays ?? this.retentionDays) * 86400000;
 
     for (const set of sets) {
       if (new Date(set.createdAt).getTime() < cutoff) {

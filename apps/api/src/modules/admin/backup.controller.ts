@@ -58,6 +58,13 @@ export class BackupController {
     return this.backupService.setSchedule(body);
   }
 
+  @ApiOperation({ summary: 'Delete backup schedule' })
+  @Delete('schedule')
+  async deleteSchedule() {
+    await this.backupService.deleteSchedule();
+    return { message: 'Schedule deleted' };
+  }
+
   @ApiOperation({ summary: 'Validate a backup set' })
   @Post('sets/:setId/validate')
   validateSet(@Param('setId') setId: string) {
