@@ -56,6 +56,7 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
   private playerRecordHandle: ReturnType<typeof setInterval> | null = null;
   private pruneHandle: ReturnType<typeof setInterval> | null = null;
   private statsHandle: ReturnType<typeof setInterval> | null = null;
+  private saveAllHandle: ReturnType<typeof setInterval> | null = null;
   private cachedContainerStats: Record<string, ContainerResourceStats> = {};
   private prevCpuIdle = 0;
   private prevCpuTotal = 0;
@@ -67,6 +68,8 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
   private retryIntervalMs: number;
   private crashLoopThreshold: number;
   private crashLoopWindowMs: number;
+  private mapSaveEnabled = false;
+  private mapSaveIntervalMs = 30_000;
 
   private trackers: Record<ContainerName, ContainerTracker> = {
     'ac-worldserver': {
@@ -154,6 +157,9 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
       this.eventService.prunePlayerHistory();
       this.eventService.pruneContainerStats();
     }, PRUNE_INTERVAL_MS);
+
+    // Periodic .saveall for fresh map position data
+    this.startSaveAllTimer();
   }
 
   onModuleDestroy() {
@@ -161,6 +167,7 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     if (this.playerRecordHandle) clearInterval(this.playerRecordHandle);
     if (this.pruneHandle) clearInterval(this.pruneHandle);
     if (this.statsHandle) clearInterval(this.statsHandle);
+    if (this.saveAllHandle) clearInterval(this.saveAllHandle);
     this.logger.log('Health monitor stopped');
   }
 
@@ -195,6 +202,14 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
     if (settings['crashLoopWindow']) {
       this.crashLoopWindowMs = parseInt(settings['crashLoopWindow'], 10);
     }
+    if (settings['mapSaveEnabled'] !== undefined) {
+      this.mapSaveEnabled = settings['mapSaveEnabled'] === 'true';
+    }
+    if (settings['mapSaveInterval']) {
+      const ms = parseInt(settings['mapSaveInterval'], 10);
+      if (!isNaN(ms) && ms >= 10000) this.mapSaveIntervalMs = ms;
+    }
+    this.startSaveAllTimer();
   }
 
   /** Suppress auto-restart (used during restore to prevent fighting) */
@@ -221,6 +236,32 @@ export class MonitorService implements OnModuleInit, OnModuleDestroy {
         'crash_loop_cleared',
         'Manually cleared by admin',
       );
+    }
+  }
+
+  private startSaveAllTimer(): void {
+    if (this.saveAllHandle) {
+      clearInterval(this.saveAllHandle);
+      this.saveAllHandle = null;
+    }
+    if (this.mapSaveEnabled) {
+      this.logger.debug(
+        `Map position save enabled (interval: ${this.mapSaveIntervalMs / 1000}s)`,
+      );
+      this.saveAllHandle = setInterval(
+        () => void this.executeSaveAll(),
+        this.mapSaveIntervalMs,
+      );
+    }
+  }
+
+  private async executeSaveAll(): Promise<void> {
+    if (!this.cachedHealth.soap.connected) return;
+    try {
+      await this.soapService.executeCommand('.saveall');
+      this.logger.debug('Map .saveall executed');
+    } catch {
+      this.logger.debug('Map .saveall failed');
     }
   }
 

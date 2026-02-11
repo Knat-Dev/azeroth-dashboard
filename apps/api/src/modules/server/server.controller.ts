@@ -79,6 +79,16 @@ export class ServerController {
     return this.eventService.getPlayerHistory(r);
   }
 
+  @ApiOperation({ summary: 'Get online player positions for map' })
+  @Get('map/players')
+  @UseGuards(JwtAuthGuard)
+  getMapPlayers(@Query('map') map?: string) {
+    const mapId = map !== undefined ? parseInt(map, 10) : undefined;
+    return this.serverService.getMapPlayers(
+      mapId !== undefined && !isNaN(mapId) ? mapId : undefined,
+    );
+  }
+
   @ApiOperation({ summary: 'List online players' })
   @Get('players')
   @UseGuards(JwtAuthGuard)

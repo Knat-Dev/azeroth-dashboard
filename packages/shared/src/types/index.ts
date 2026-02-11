@@ -186,6 +186,23 @@ export interface ServerEvent {
   duration_ms: number | null;
 }
 
+export interface MapPlayer {
+  guid: number;
+  name: string;
+  level: number;
+  class: number;
+  race: number;
+  map: number;
+  zone: number;
+  positionX: number;
+  positionY: number;
+}
+
+export interface MapPlayersResponse {
+  players: MapPlayer[];
+  totalOnline: number;
+}
+
 export interface OnlinePlayer {
   guid: number;
   name: string;

@@ -15,6 +15,8 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   discordWebhookUrl: "",
   webhookEvents: "crash,restart_failed,crash_loop,backup_success,backup_failed",
   faction_theme: "neutral",
+  mapSaveEnabled: "false",
+  mapSaveInterval: "30000",
 };
 
 export function msToSeconds(ms: string | undefined): string {

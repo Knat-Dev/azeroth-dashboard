@@ -1,3 +1,6 @@
+export { CONTINENT_MAPS, MAP_CITIES, MAP_FRAME_WIDTH, MAP_FRAME_HEIGHT, gameToMapPixel, pixelToMapPercent } from './map-bounds.js';
+export type { ContinentMapConfig, MapCity, Faction, PoiType } from './map-bounds.js';
+
 export const WOW_CLASSES: Record<number, { name: string; color: string }> = {
   1: { name: 'Warrior', color: '#C79C6E' },
   2: { name: 'Paladin', color: '#F58CBA' },

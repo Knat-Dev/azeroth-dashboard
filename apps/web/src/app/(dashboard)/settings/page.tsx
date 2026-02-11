@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react";
 import { useSettings, msToSeconds, secondsToMs } from "@/hooks/use-settings";
 import { useTheme } from "@/providers/theme-provider";
-import { Settings, Save, RefreshCw, Bell, Send, Palette } from "lucide-react";
+import { Settings, Save, RefreshCw, Bell, Send, Palette, MapIcon } from "lucide-react";
 
 const WEBHOOK_EVENT_OPTIONS = [
   { value: "crash", label: "Server Crash" },
@@ -337,6 +337,84 @@ export default function SettingsPage() {
             />
             <p className="mt-1 text-xs text-muted-foreground">
               Time window for counting crashes
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Map Position Tracking Section */}
+      <div className="rounded-xl glass p-3 md:p-4">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="rounded-lg bg-secondary p-2">
+            <MapIcon className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Map Position Tracking
+            </h2>
+            <p className="text-xs text-muted-foreground/70">
+              Force periodic character saves for live map positions
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Enable Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-foreground">
+                Enable Position Tracking
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Periodically send .saveall via SOAP to refresh character positions in the database
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.mapSaveEnabled === "true"}
+              onClick={() =>
+                updateSetting(
+                  "mapSaveEnabled",
+                  settings.mapSaveEnabled === "true" ? "false" : "true",
+                )
+              }
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-card ${
+                settings.mapSaveEnabled === "true"
+                  ? "bg-primary"
+                  : "bg-secondary"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-foreground shadow-lg transition-transform duration-200 ${
+                  settings.mapSaveEnabled === "true"
+                    ? "translate-x-5"
+                    : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Save Interval */}
+          <div className="max-w-xs">
+            <label className="mb-1 block text-sm font-medium text-foreground">
+              Save Interval (seconds)
+            </label>
+            <input
+              type="number"
+              min="10"
+              max="120"
+              step="5"
+              value={msToSeconds(settings.mapSaveInterval)}
+              onChange={(e) =>
+                updateSetting("mapSaveInterval", secondsToMs(e.target.value))
+              }
+              className={inputClasses}
+              placeholder="30"
+            />
+            <p className="mt-1 text-xs text-yellow-400/80">
+              Forces worldserver to save all character data at this interval. Lower values = more
+              accurate map positions but increased DB write load.
             </p>
           </div>
         </div>

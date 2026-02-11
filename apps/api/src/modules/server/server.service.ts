@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import type { ItemTooltipData, EquippedItemSlot } from '@repo/shared';
+import type { ItemTooltipData, EquippedItemSlot, MapPlayersResponse } from '@repo/shared';
 import { Realmlist } from '../../entities/auth/realmlist.entity.js';
 import { Character } from '../../entities/characters/character.entity.js';
 import { CharacterInventory } from '../../entities/characters/character-inventory.entity.js';
@@ -57,6 +57,44 @@ export class ServerService {
     } catch {
       return 0;
     }
+  }
+
+  async getMapPlayers(mapId?: number): Promise<MapPlayersResponse> {
+    const qb = this.characterRepo
+      .createQueryBuilder('c')
+      .select([
+        'c.guid',
+        'c.name',
+        'c.level',
+        'c.class',
+        'c.race',
+        'c.map',
+        'c.zone',
+        'c.positionX',
+        'c.positionY',
+      ])
+      .where('c.online = 1');
+
+    if (mapId !== undefined) {
+      qb.andWhere('c.map = :mapId', { mapId });
+    }
+
+    const characters = await qb.getMany();
+
+    return {
+      players: characters.map((c) => ({
+        guid: c.guid,
+        name: c.name,
+        level: c.level,
+        class: c.class,
+        race: c.race,
+        map: c.map,
+        zone: c.zone,
+        positionX: c.positionX,
+        positionY: c.positionY,
+      })),
+      totalOnline: characters.length,
+    };
   }
 
   async getRealmName(): Promise<string> {

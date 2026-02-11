@@ -10,6 +10,7 @@ import {
   Database,
   Home,
   LogOut,
+  Map,
   Monitor,
   Moon,
   Pin,
@@ -27,6 +28,7 @@ import { useEffect, useRef, useState } from "react";
 const opsItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/players", label: "Players", icon: Users },
+  { href: "/map", label: "Map", icon: Map },
   { href: "/console", label: "Console", icon: Terminal },
   { href: "/backups", label: "Backups", icon: Database },
 ];
