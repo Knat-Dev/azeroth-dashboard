@@ -211,6 +211,7 @@ describe('parseBackupFilename', () => {
       database: 'acore_auth',
       timestamp: '2025-02-08T15-30-45-000Z',
       isPreRestore: false,
+      isScheduled: false,
     });
   });
 
@@ -220,6 +221,17 @@ describe('parseBackupFilename', () => {
       database: 'acore_characters',
       timestamp: '2025-02-08T15-30-45-000Z',
       isPreRestore: true,
+      isScheduled: false,
+    });
+  });
+
+  it('should parse a scheduled backup filename', () => {
+    const result = parseBackupFilename('acore_auth_scheduled_2025-02-08T03-00-00-000Z.sql.gz');
+    expect(result).toEqual({
+      database: 'acore_auth',
+      timestamp: '2025-02-08T03-00-00-000Z',
+      isPreRestore: false,
+      isScheduled: true,
     });
   });
 
@@ -229,6 +241,7 @@ describe('parseBackupFilename', () => {
       database: 'acore_world',
       timestamp: '2025-02-08T15-30-45-000Z',
       isPreRestore: false,
+      isScheduled: false,
     });
   });
 
@@ -238,6 +251,7 @@ describe('parseBackupFilename', () => {
       database: 'acore_playerbots',
       timestamp: '2025-02-08T15-30-45-000Z',
       isPreRestore: false,
+      isScheduled: false,
     });
   });
 
@@ -514,6 +528,24 @@ describe('BackupService', () => {
       expect(preRestoreSet!.id).toBe(`pre-restore_${timestamp}`);
     });
 
+    it('should group scheduled files separately with correct label', async () => {
+      const timestamp = '2025-02-08T03-00-00-000Z';
+      mockFsPromises.readdir.mockResolvedValue([
+        `acore_auth_${timestamp}.sql.gz`,
+        `acore_auth_scheduled_${timestamp}.sql.gz`,
+      ]);
+      mockFsPromises.stat.mockResolvedValue({ size: 500 });
+
+      const sets = await service.listBackups();
+
+      expect(sets).toHaveLength(2);
+      const manualSet = sets.find((s) => s.label === 'Manual backup');
+      const scheduledSet = sets.find((s) => s.label === 'Scheduled backup');
+      expect(manualSet).toBeDefined();
+      expect(scheduledSet).toBeDefined();
+      expect(scheduledSet!.id).toBe(`scheduled_${timestamp}`);
+    });
+
     it('should sort sets newest first', async () => {
       mockFsPromises.readdir.mockResolvedValue([
         'acore_auth_2025-01-01T00-00-00-000Z.sql.gz',
@@ -661,6 +693,18 @@ describe('BackupService', () => {
       );
     });
 
+    it('should use _scheduled_ infix when source is scheduled', async () => {
+      setupDumpMocks();
+      mockFsPromises.stat.mockResolvedValue({ size: 5000 });
+      mockFsPromises.readdir.mockResolvedValue([]);
+
+      const results = await service.triggerBackup(['acore_auth'], 'scheduled');
+
+      expect(results).toHaveLength(1);
+      expect(results[0].success).toBe(true);
+      expect(results[0].filename).toMatch(/^acore_auth_scheduled_.*\.sql\.gz$/);
+    });
+
     it('should throw BadRequestException for invalid database name', async () => {
       await expect(service.triggerBackup(['evil_db'])).rejects.toThrow(
         BadRequestException,
@@ -748,64 +792,64 @@ describe('BackupService', () => {
       (service as any).matchesCron(date, cron);
 
     it('should match * * * * * for any date', () => {
-      expect(matchesCron(new Date('2024-06-15T14:30:00'), '* * * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T14:30:00Z'), '* * * * *')).toBe(
         true,
       );
     });
 
-    it('should match 0 3 * * * at 03:00', () => {
-      expect(matchesCron(new Date('2024-06-15T03:00:00'), '0 3 * * *')).toBe(
+    it('should match 0 3 * * * at 03:00 UTC', () => {
+      expect(matchesCron(new Date('2024-06-15T03:00:00Z'), '0 3 * * *')).toBe(
         true,
       );
     });
 
-    it('should not match 0 3 * * * at 03:01', () => {
-      expect(matchesCron(new Date('2024-06-15T03:01:00'), '0 3 * * *')).toBe(
+    it('should not match 0 3 * * * at 03:01 UTC', () => {
+      expect(matchesCron(new Date('2024-06-15T03:01:00Z'), '0 3 * * *')).toBe(
         false,
       );
     });
 
     it('should match */5 step values at minute 0, 5, 10', () => {
-      expect(matchesCron(new Date('2024-06-15T00:00:00'), '*/5 * * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T00:00:00Z'), '*/5 * * * *')).toBe(
         true,
       );
-      expect(matchesCron(new Date('2024-06-15T00:05:00'), '*/5 * * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T00:05:00Z'), '*/5 * * * *')).toBe(
         true,
       );
-      expect(matchesCron(new Date('2024-06-15T00:10:00'), '*/5 * * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T00:10:00Z'), '*/5 * * * *')).toBe(
         true,
       );
     });
 
     it('should not match */5 step values at minute 3', () => {
-      expect(matchesCron(new Date('2024-06-15T00:03:00'), '*/5 * * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T00:03:00Z'), '*/5 * * * *')).toBe(
         false,
       );
     });
 
     it('should match comma-separated lists 1,15,30', () => {
       expect(
-        matchesCron(new Date('2024-06-15T00:01:00'), '1,15,30 * * * *'),
+        matchesCron(new Date('2024-06-15T00:01:00Z'), '1,15,30 * * * *'),
       ).toBe(true);
       expect(
-        matchesCron(new Date('2024-06-15T00:15:00'), '1,15,30 * * * *'),
+        matchesCron(new Date('2024-06-15T00:15:00Z'), '1,15,30 * * * *'),
       ).toBe(true);
       expect(
-        matchesCron(new Date('2024-06-15T00:30:00'), '1,15,30 * * * *'),
+        matchesCron(new Date('2024-06-15T00:30:00Z'), '1,15,30 * * * *'),
       ).toBe(true);
     });
 
     it('should match range 1-5 for values within range', () => {
-      expect(matchesCron(new Date('2024-06-15T01:00:00'), '0 1-5 * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T01:00:00Z'), '0 1-5 * * *')).toBe(
         true,
       );
-      expect(matchesCron(new Date('2024-06-15T05:00:00'), '0 1-5 * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T05:00:00Z'), '0 1-5 * * *')).toBe(
         true,
       );
     });
 
     it('should not match range 1-5 at boundary 6', () => {
-      expect(matchesCron(new Date('2024-06-15T06:00:00'), '0 1-5 * * *')).toBe(
+      expect(matchesCron(new Date('2024-06-15T06:00:00Z'), '0 1-5 * * *')).toBe(
         false,
       );
     });
@@ -1079,8 +1123,8 @@ describe('BackupService', () => {
 
       // Verify server lifecycle
       expect(mockMonitorService.suppressAutoRestart).toHaveBeenCalled();
-      expect(mockDockerService.stopContainer).toHaveBeenCalledWith('ac-worldserver', 300);
-      expect(mockDockerService.stopContainer).toHaveBeenCalledWith('ac-authserver', 300);
+      expect(mockDockerService.stopContainer).toHaveBeenCalledWith('ac-worldserver', 120);
+      expect(mockDockerService.stopContainer).toHaveBeenCalledWith('ac-authserver', 120);
       expect(mockDockerService.startContainer).toHaveBeenCalledWith('ac-authserver');
       expect(mockDockerService.startContainer).toHaveBeenCalledWith('ac-worldserver');
       expect(mockMonitorService.resumeAutoRestart).toHaveBeenCalled();
@@ -1246,9 +1290,19 @@ describe('BackupService', () => {
         return gunzipStream;
       });
 
-      // stopContainer succeeds but getContainerState says still running
+      // stopContainer succeeds; getContainerState returns exited during retry loop
+      // but running during the final verify step (Promise.all call)
       mockDockerService.stopContainer.mockResolvedValue({ state: 'exited', status: '', startedAt: null });
-      mockDockerService.getContainerState.mockResolvedValue({ state: 'running', status: 'Up', startedAt: null });
+      let getStateCallCount = 0;
+      mockDockerService.getContainerState.mockImplementation(async () => {
+        getStateCallCount++;
+        // First 2 calls are from the retry loops (worldserver + authserver stop checks)
+        // Calls 3+ are from the verify_stopped Promise.all
+        if (getStateCallCount <= 2) {
+          return { state: 'exited', status: '', startedAt: null };
+        }
+        return { state: 'running', status: 'Up', startedAt: null };
+      });
 
       mockCreateConnection.mockReturnValue(createMockConnection().conn);
       mockCreateGzip.mockReturnValue(createMockGzipStream());

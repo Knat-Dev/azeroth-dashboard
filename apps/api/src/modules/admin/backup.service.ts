@@ -56,19 +56,29 @@ function assertSafeFilename(filename: string): void {
 
 /**
  * Parse a backup filename into its components.
- * Matches `{db}_pre-restore_{timestamp}.sql.gz` or `{db}_{timestamp}.sql.gz`.
+ * Matches `{db}_pre-restore_{timestamp}.sql.gz`, `{db}_scheduled_{timestamp}.sql.gz`,
+ * or `{db}_{timestamp}.sql.gz`.
  */
 export function parseBackupFilename(filename: string): {
   database: string;
   timestamp: string;
   isPreRestore: boolean;
+  isScheduled: boolean;
 } | null {
-  // Try pre-restore pattern first (more specific)
+  // Try pre-restore pattern first (most specific)
   for (const db of ALLOWED_DATABASES) {
     const preRestorePrefix = `${db}_pre-restore_`;
     if (filename.startsWith(preRestorePrefix) && filename.endsWith('.sql.gz')) {
       const timestamp = filename.slice(preRestorePrefix.length, -'.sql.gz'.length);
-      if (timestamp) return { database: db, timestamp, isPreRestore: true };
+      if (timestamp) return { database: db, timestamp, isPreRestore: true, isScheduled: false };
+    }
+  }
+  // Try scheduled pattern
+  for (const db of ALLOWED_DATABASES) {
+    const scheduledPrefix = `${db}_scheduled_`;
+    if (filename.startsWith(scheduledPrefix) && filename.endsWith('.sql.gz')) {
+      const timestamp = filename.slice(scheduledPrefix.length, -'.sql.gz'.length);
+      if (timestamp) return { database: db, timestamp, isPreRestore: false, isScheduled: true };
     }
   }
   // Try normal pattern
@@ -76,7 +86,7 @@ export function parseBackupFilename(filename: string): {
     const prefix = `${db}_`;
     if (filename.startsWith(prefix) && filename.endsWith('.sql.gz')) {
       const timestamp = filename.slice(prefix.length, -'.sql.gz'.length);
-      if (timestamp && !timestamp.includes('pre-restore')) return { database: db, timestamp, isPreRestore: false };
+      if (timestamp && !timestamp.includes('pre-restore') && !timestamp.includes('scheduled')) return { database: db, timestamp, isPreRestore: false, isScheduled: false };
     }
   }
   return null;
@@ -217,7 +227,7 @@ export class BackupService implements OnModuleInit {
     await this.loadScheduleConfig();
   }
 
-  async triggerBackup(databases: string[]) {
+  async triggerBackup(databases: string[], source: 'manual' | 'scheduled' = 'manual') {
     for (const db of databases) {
       if (!ALLOWED_DATABASES.includes(db)) {
         throw new BadRequestException(`Invalid database name: ${db}`);
@@ -230,11 +240,12 @@ export class BackupService implements OnModuleInit {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const infix = source === 'scheduled' ? '_scheduled_' : '_';
     const results = [];
 
     try {
       for (const db of databases) {
-        const filename = `${db}_${timestamp}.sql.gz`;
+        const filename = `${db}${infix}${timestamp}.sql.gz`;
         const filePath = join(this.backupDir, filename);
 
         try {
@@ -457,7 +468,7 @@ export class BackupService implements OnModuleInit {
   async listBackups(): Promise<BackupSet[]> {
     try {
       const files = await fs.readdir(this.backupDir);
-      const setMap = new Map<string, { files: BackupSetFile[]; isPreRestore: boolean }>();
+      const setMap = new Map<string, { files: BackupSetFile[]; isPreRestore: boolean; isScheduled: boolean }>();
 
       for (const file of files) {
         if (!file.endsWith('.sql.gz')) continue;
@@ -465,10 +476,11 @@ export class BackupService implements OnModuleInit {
         if (!parsed) continue;
 
         const stat = await fs.stat(join(this.backupDir, file));
-        const key = `${parsed.isPreRestore ? 'pre-restore_' : ''}${parsed.timestamp}`;
+        const prefix = parsed.isPreRestore ? 'pre-restore_' : parsed.isScheduled ? 'scheduled_' : '';
+        const key = `${prefix}${parsed.timestamp}`;
 
         if (!setMap.has(key)) {
-          setMap.set(key, { files: [], isPreRestore: parsed.isPreRestore });
+          setMap.set(key, { files: [], isPreRestore: parsed.isPreRestore, isScheduled: parsed.isScheduled });
         }
         setMap.get(key)!.files.push({
           filename: file,
@@ -479,7 +491,8 @@ export class BackupService implements OnModuleInit {
 
       const sets: BackupSet[] = [];
       for (const [key, entry] of setMap) {
-        const timestamp = entry.isPreRestore ? key.slice('pre-restore_'.length) : key;
+        const prefixLen = entry.isPreRestore ? 'pre-restore_'.length : entry.isScheduled ? 'scheduled_'.length : 0;
+        const timestamp = key.slice(prefixLen);
         const createdAt = timestamp.replace(/T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z/, 'T$1:$2:$3.$4Z');
         sets.push({
           id: key,
@@ -488,7 +501,7 @@ export class BackupService implements OnModuleInit {
           files: entry.files,
           totalSize: entry.files.reduce((sum, f) => sum + f.size, 0),
           isPreRestore: entry.isPreRestore,
-          label: entry.isPreRestore ? 'Pre-restore backup' : 'Manual backup',
+          label: entry.isPreRestore ? 'Pre-restore backup' : entry.isScheduled ? 'Scheduled backup' : 'Manual backup',
         });
       }
 
@@ -615,7 +628,7 @@ export class BackupService implements OnModuleInit {
     this.scheduleTimer = setInterval(() => {
       const now = new Date();
       if (this.matchesCron(now, config.cron)) {
-        this.triggerBackup(config.databases).catch((err) =>
+        this.triggerBackup(config.databases, 'scheduled').catch((err) =>
           this.logger.error(`Scheduled backup failed: ${err}`),
         );
       }
@@ -627,11 +640,11 @@ export class BackupService implements OnModuleInit {
     if (parts.length < 5) return false;
     const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
     return (
-      this.cronFieldMatches(minute, date.getMinutes()) &&
-      this.cronFieldMatches(hour, date.getHours()) &&
-      this.cronFieldMatches(dayOfMonth, date.getDate()) &&
-      this.cronFieldMatches(month, date.getMonth() + 1) &&
-      this.cronFieldMatches(dayOfWeek, date.getDay())
+      this.cronFieldMatches(minute, date.getUTCMinutes()) &&
+      this.cronFieldMatches(hour, date.getUTCHours()) &&
+      this.cronFieldMatches(dayOfMonth, date.getUTCDate()) &&
+      this.cronFieldMatches(month, date.getUTCMonth() + 1) &&
+      this.cronFieldMatches(dayOfWeek, date.getUTCDay())
     );
   }
 

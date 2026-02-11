@@ -74,7 +74,14 @@ function describeCron(cron: string): string {
   const mon = parts[3]!;
   const dow = parts[4]!;
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const pad = (v: string) => v.padStart(2, "0");
+  const pad = (v: string | number) => String(v).padStart(2, "0");
+
+  /** Convert a UTC hour:minute to the user's local time. */
+  function utcToLocal(utcH: number, utcM: number): { h: number; m: number } {
+    const d = new Date();
+    d.setUTCHours(utcH, utcM, 0, 0);
+    return { h: d.getHours(), m: d.getMinutes() };
+  }
 
   // Every N minutes
   if (min.startsWith("*/") && hour === "*" && dom === "*" && mon === "*" && dow === "*") {
@@ -86,12 +93,14 @@ function describeCron(cron: string): string {
   }
   // Daily at HH:MM
   if (min !== "*" && hour !== "*" && !hour.includes("/") && !hour.includes(",") && dom === "*" && mon === "*" && dow === "*") {
-    return `Daily at ${pad(hour)}:${pad(min)}`;
+    const local = utcToLocal(parseInt(hour), parseInt(min));
+    return `Daily at ${pad(local.h)}:${pad(local.m)}`;
   }
   // Weekly on specific days
   if (min !== "*" && hour !== "*" && dom === "*" && mon === "*" && dow !== "*" && !dow.includes("/")) {
+    const local = utcToLocal(parseInt(hour), parseInt(min));
     const dayNames = dow.split(",").map(d => DAYS[parseInt(d)] ?? d).join(", ");
-    return `${dayNames} at ${pad(hour)}:${pad(min)}`;
+    return `${dayNames} at ${pad(local.h)}:${pad(local.m)}`;
   }
   return cron;
 }
@@ -393,7 +402,9 @@ export default function BackupsPage() {
                       "rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
                       set.isPreRestore
                         ? "bg-amber-500/20 text-amber-400"
-                        : "bg-secondary text-muted-foreground"
+                        : set.label === "Scheduled backup"
+                          ? "bg-blue-500/20 text-blue-400"
+                          : "bg-secondary text-muted-foreground"
                     )}>
                       {set.label}
                     </span>
@@ -664,7 +675,7 @@ export default function BackupsPage() {
                     className="w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Default: 0 3 * * * (daily at 3 AM)
+                    Times are in UTC. Default: 0 3 * * * (daily at 3:00 UTC)
                   </p>
                 </div>
                 <div>
