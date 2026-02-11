@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState, useCallback } from "react";
+import { useMemo, useEffect, useState, useCallback, useRef } from "react";
 import {
   MapContainer,
   ImageOverlay,
@@ -13,7 +13,7 @@ import * as L from "leaflet";
 import { CRS, LatLngBounds } from "leaflet";
 import type { LeafletMouseEvent } from "leaflet";
 import { gameToMapPixel, pixelToMapPercent, MAP_CITIES, MAP_FRAME_WIDTH, MAP_FRAME_HEIGHT } from "@repo/shared";
-import type { ContinentMapConfig, MapPlayer, MapCity } from "@repo/shared";
+import type { ContinentMapConfig, MapPlayer } from "@repo/shared";
 import { PlayersLayer } from "./player-marker";
 
 import "leaflet/dist/leaflet.css";
@@ -21,6 +21,8 @@ import "leaflet/dist/leaflet.css";
 interface WorldMapProps {
   config: ContinentMapConfig;
   players: MapPlayer[];
+  focusGuid?: number;
+  highlightGuids?: Set<number>;
 }
 
 /** WoW uses a single icon per POI type — no faction coloring (verified from AreaPOI.dbc). */
@@ -91,7 +93,29 @@ function CoordinateTracker({
   return null;
 }
 
-export function WorldMap({ config, players }: WorldMapProps) {
+/** Flies to the focused player's position when focusGuid changes. */
+function MapFocuser({
+  focusGuid,
+  markers,
+}: {
+  focusGuid: number | undefined;
+  markers: { player: MapPlayer; pixelX: number; pixelY: number }[];
+}) {
+  const map = useMap();
+  const lastFocused = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (focusGuid === undefined || focusGuid === lastFocused.current) return;
+    const match = markers.find((m) => m.player.guid === focusGuid);
+    if (!match) return;
+    lastFocused.current = focusGuid;
+    map.flyTo([match.pixelY, match.pixelX], 3, { duration: 0.8 });
+  }, [focusGuid, markers, map]);
+
+  return null;
+}
+
+export function WorldMap({ config, players, focusGuid, highlightGuids }: WorldMapProps) {
   const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
 
   // Full image bounds for the overlay (1024x768)
@@ -184,7 +208,8 @@ export function WorldMap({ config, players }: WorldMapProps) {
             </Tooltip>
           </Marker>
         ))}
-        <PlayersLayer markers={markers} />
+        <PlayersLayer markers={markers} highlightGuids={highlightGuids} />
+        <MapFocuser focusGuid={focusGuid} markers={markers} />
       </MapContainer>
       {/* WoW-style coordinate display */}
       {coords && coords.x >= 0 && coords.x <= 100 && coords.y >= 0 && coords.y <= 100 && (

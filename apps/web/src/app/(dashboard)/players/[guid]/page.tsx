@@ -12,7 +12,8 @@ import {
   getZoneName,
 } from "@/lib/wow-constants";
 import type { EquippedItemSlot, PlayerDetail } from "@repo/shared";
-import { ArrowLeft, Clock, Coins, Heart, Info, MapPin, Shield, Swords, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Clock, Coins, Heart, Info, Map as MapIcon, MapPin, Shield, Swords, Trophy, Users } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -189,6 +190,15 @@ export default function PlayerDetailPage() {
                 {player.positionX.toFixed(1)}, {player.positionY.toFixed(1)}, {player.positionZ.toFixed(1)}
               </span>
             </div>
+            {player.online === 1 && (
+              <Link
+                href={`/map?focus=${player.guid}`}
+                className="mt-1 flex items-center justify-center gap-1.5 rounded-lg border border-border bg-secondary/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <MapIcon className="h-3.5 w-3.5" />
+                View on Map
+              </Link>
+            )}
             {player.guildName && (
               <>
                 <div className="flex justify-between">

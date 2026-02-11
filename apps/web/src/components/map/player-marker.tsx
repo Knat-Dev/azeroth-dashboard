@@ -18,7 +18,7 @@ export interface PlayerMarkerData {
  * Avoids 500+ React components / SVG DOM nodes — everything is drawn
  * on one <canvas>, with tooltips created lazily on hover.
  */
-export function PlayersLayer({ markers }: { markers: PlayerMarkerData[] }) {
+export function PlayersLayer({ markers, highlightGuids }: { markers: PlayerMarkerData[]; highlightGuids?: Set<number> }) {
   const map = useMap();
   const router = useRouter();
   const groupRef = useRef<L.LayerGroup | null>(null);
@@ -43,16 +43,20 @@ export function PlayersLayer({ markers }: { markers: PlayerMarkerData[] }) {
 
     group.clearLayers();
 
+    const hasHighlights = highlightGuids && highlightGuids.size > 0;
+
     for (const m of markers) {
       const color = WOW_CLASSES[m.player.class]?.color ?? "#FFFFFF";
+      const isHighlighted = hasHighlights && highlightGuids.has(m.player.guid);
+      const isDimmed = hasHighlights && !isHighlighted;
       const dot = L.circleMarker([m.pixelY, m.pixelX], {
         renderer,
-        radius: 5,
-        color,
+        radius: isHighlighted ? 8 : 5,
+        color: isHighlighted ? "#FFFFFF" : color,
         fillColor: color,
-        fillOpacity: 0.9,
-        weight: 1.5,
-        opacity: 1,
+        fillOpacity: isDimmed ? 0.3 : 0.9,
+        weight: isHighlighted ? 3 : 1.5,
+        opacity: isDimmed ? 0.3 : 1,
       });
 
       dot.on("mouseover", () => {
@@ -80,7 +84,7 @@ export function PlayersLayer({ markers }: { markers: PlayerMarkerData[] }) {
 
       group.addLayer(dot);
     }
-  }, [markers, router]);
+  }, [markers, router, highlightGuids]);
 
   return null;
 }
