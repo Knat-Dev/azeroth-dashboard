@@ -65,9 +65,19 @@ function formatSize(bytes: number) {
 
 const ALL_DBS = ["acore_auth", "acore_characters", "acore_playerbots", "acore_world"];
 
-function describeCron(cron: string): string {
+const CRON_PRESETS = [
+  { label: "Every 6h", cron: "0 */6 * * *" },
+  { label: "Every 12h", cron: "0 */12 * * *" },
+  { label: "Daily 03:00 UTC", cron: "0 3 * * *" },
+  { label: "Daily 00:00 UTC", cron: "0 0 * * *" },
+  { label: "Twice daily", cron: "0 3,15 * * *" },
+  { label: "Weekly Sun", cron: "0 3 * * 0" },
+  { label: "Mon/Wed/Fri", cron: "0 3 * * 1,3,5" },
+] as const;
+
+function describeCron(cron: string): { utc: string; local: string | null } {
   const parts = cron.trim().split(/\s+/);
-  if (parts.length !== 5) return cron;
+  if (parts.length !== 5) return { utc: cron, local: null };
   const min = parts[0]!;
   const hour = parts[1]!;
   const dom = parts[2]!;
@@ -76,33 +86,50 @@ function describeCron(cron: string): string {
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const pad = (v: string | number) => String(v).padStart(2, "0");
 
-  /** Convert a UTC hour:minute to the user's local time. */
   function utcToLocal(utcH: number, utcM: number): { h: number; m: number } {
     const d = new Date();
     d.setUTCHours(utcH, utcM, 0, 0);
     return { h: d.getHours(), m: d.getMinutes() };
   }
 
-  // Every N minutes
+  // Every N minutes — no specific time, no local conversion needed
   if (min.startsWith("*/") && hour === "*" && dom === "*" && mon === "*" && dow === "*") {
-    return `Every ${min.slice(2)} min`;
+    return { utc: `Every ${min.slice(2)} min`, local: null };
   }
   // Every N hours
   if (min !== "*" && hour.startsWith("*/") && dom === "*" && mon === "*" && dow === "*") {
-    return `Every ${hour.slice(2)}h at :${pad(min)}`;
+    return { utc: `Every ${hour.slice(2)}h at :${pad(min)}`, local: null };
   }
   // Daily at HH:MM
   if (min !== "*" && hour !== "*" && !hour.includes("/") && !hour.includes(",") && dom === "*" && mon === "*" && dow === "*") {
     const local = utcToLocal(parseInt(hour), parseInt(min));
-    return `Daily at ${pad(local.h)}:${pad(local.m)}`;
+    return {
+      utc: `Daily at ${pad(hour)}:${pad(min)} UTC`,
+      local: `${pad(local.h)}:${pad(local.m)} local`,
+    };
+  }
+  // Daily at multiple hours (e.g. 0 3,15 * * *)
+  if (min !== "*" && hour.includes(",") && !hour.includes("/") && dom === "*" && mon === "*" && dow === "*") {
+    const utcTimes = hour.split(",").map(h => `${pad(h)}:${pad(min)}`);
+    const localTimes = hour.split(",").map(h => {
+      const local = utcToLocal(parseInt(h), parseInt(min));
+      return `${pad(local.h)}:${pad(local.m)}`;
+    });
+    return {
+      utc: `Daily at ${utcTimes.join(", ")} UTC`,
+      local: `${localTimes.join(", ")} local`,
+    };
   }
   // Weekly on specific days
   if (min !== "*" && hour !== "*" && dom === "*" && mon === "*" && dow !== "*" && !dow.includes("/")) {
     const local = utcToLocal(parseInt(hour), parseInt(min));
     const dayNames = dow.split(",").map(d => DAYS[parseInt(d)] ?? d).join(", ");
-    return `${dayNames} at ${pad(local.h)}:${pad(local.m)}`;
+    return {
+      utc: `${dayNames} at ${pad(hour)}:${pad(min)} UTC`,
+      local: `${pad(local.h)}:${pad(local.m)} local`,
+    };
   }
-  return cron;
+  return { utc: cron, local: null };
 }
 
 export default function BackupsPage() {
@@ -343,7 +370,19 @@ export default function BackupsPage() {
               "font-medium whitespace-nowrap",
               schedule.enabled ? "text-green-400" : "text-muted-foreground"
             )}>
-              {schedule.enabled ? describeCron(schedule.cron) : "Schedule disabled"}
+              {schedule.enabled ? (() => {
+                const desc = describeCron(schedule.cron);
+                return (
+                  <>
+                    {desc.utc}
+                    {desc.local && (
+                      <span className="ml-1 font-normal text-muted-foreground">
+                        ({desc.local})
+                      </span>
+                    )}
+                  </>
+                );
+              })() : "Schedule disabled"}
             </span>
             {schedule.enabled && (
               <>
@@ -662,6 +701,26 @@ export default function BackupsPage() {
                   Enable scheduled backups
                 </label>
                 <div>
+                  <label className="mb-1.5 block text-sm text-muted-foreground">
+                    Quick presets
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {CRON_PRESETS.map((p) => (
+                      <button
+                        key={p.cron}
+                        type="button"
+                        onClick={() => setScheduleEdit({ ...scheduleEdit, cron: p.cron })}
+                        className={cn(
+                          "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                          scheduleEdit.cron === p.cron
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                   <label className="mb-1 block text-sm text-muted-foreground">
                     Cron expression
                   </label>
@@ -674,9 +733,35 @@ export default function BackupsPage() {
                     placeholder="0 3 * * *"
                     className="w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Times are in UTC. Default: 0 3 * * * (daily at 3:00 UTC)
-                  </p>
+                  {/* Live description */}
+                  {scheduleEdit.cron.trim().split(/\s+/).length === 5 && (() => {
+                    const desc = describeCron(scheduleEdit.cron);
+                    return (
+                      <p className="mt-1.5 text-sm font-medium text-foreground">
+                        {desc.utc}
+                        {desc.local && (
+                          <span className="ml-1 font-normal text-muted-foreground">({desc.local})</span>
+                        )}
+                      </p>
+                    );
+                  })()}
+                  {/* Cron field reference */}
+                  <div className="mt-2.5 rounded-lg bg-secondary/70 px-3 py-2.5">
+                    <div className="flex gap-2 text-center font-mono text-xs mb-1.5">
+                      {["Min", "Hour", "Day", "Mon", "DoW"].map((f) => (
+                        <span key={f} className="flex-1 text-muted-foreground">{f}</span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 text-center font-mono text-xs">
+                      {(scheduleEdit.cron.trim().split(/\s+/).concat(["", "", "", "", ""]).slice(0, 5)).map((v, i) => (
+                        <span key={i} className="flex-1 text-foreground font-semibold">{v || "—"}</span>
+                      ))}
+                    </div>
+                    <div className="mt-2 border-t border-border/50 pt-2 text-[11px] text-muted-foreground space-y-0.5">
+                      <p><span className="font-mono text-foreground/70">*</span> = any &nbsp; <span className="font-mono text-foreground/70">*/N</span> = every N &nbsp; <span className="font-mono text-foreground/70">1,3,5</span> = list</p>
+                      <p>DoW: <span className="font-mono text-foreground/70">0</span>=Sun <span className="font-mono text-foreground/70">1</span>=Mon … <span className="font-mono text-foreground/70">6</span>=Sat &nbsp; All times UTC</p>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm text-muted-foreground">
