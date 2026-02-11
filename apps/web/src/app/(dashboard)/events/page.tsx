@@ -113,7 +113,7 @@ export default function EventsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Event History</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -149,7 +149,7 @@ export default function EventsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -172,19 +172,19 @@ export default function EventsPage() {
             <table className="w-full min-w-[600px] text-sm">
               <thead className="shrink-0">
                 <tr className="border-b border-border bg-secondary/50">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-40">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-40">
                     Time
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-28">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-28">
                     Container
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-36">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground w-36">
                     Event
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Details
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">
+                  <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-24">
                     Duration
                   </th>
                 </tr>
@@ -198,7 +198,7 @@ export default function EventsPage() {
                       key={event.id}
                       className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30"
                     >
-                      <td className="px-4 py-3 w-40">
+                      <td className="px-3 py-2 w-40">
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <Clock className="h-3 w-3 shrink-0" />
                           <span title={formatTimestamp(event.timestamp)}>
@@ -206,22 +206,22 @@ export default function EventsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 w-28">
+                      <td className="px-3 py-2 w-28">
                         <span className="rounded bg-secondary px-2 py-0.5 text-xs font-medium text-foreground">
                           {shortenContainer(event.container)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 w-36">
+                      <td className="px-3 py-2 w-36">
                         <span
                           className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${eventTypeBadge(event.event_type)}`}
                         >
                           {event.event_type}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground truncate max-w-xs">
+                      <td className="px-3 py-2 text-muted-foreground truncate max-w-xs">
                         {event.details || "—"}
                       </td>
-                      <td className="px-4 py-3 text-right text-muted-foreground">
+                      <td className="px-3 py-2 text-right text-muted-foreground">
                         {event.duration_ms != null
                           ? formatDuration(event.duration_ms)
                           : "—"}
@@ -235,7 +235,7 @@ export default function EventsPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-3 flex shrink-0 items-center justify-between">
+            <div className="mt-2 flex shrink-0 items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </p>

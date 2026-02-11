@@ -296,7 +296,7 @@ export default function BackupsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header bar */}
-      <div className="mb-4 flex shrink-0 items-center justify-between">
+      <div className="mb-3 flex shrink-0 items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Database Backups</h1>
         <div className="flex items-center gap-2">
           <button
@@ -355,7 +355,7 @@ export default function BackupsPage() {
         <button
           onClick={() => setShowSchedule(true)}
           className={cn(
-            "mb-4 shrink-0 flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm text-left w-full transition-colors",
+            "mb-3 shrink-0 flex items-center gap-3 rounded-lg border px-4 py-2.5 text-sm text-left w-full transition-colors",
             schedule.enabled
               ? "border-green-500/30 bg-green-500/5 hover:bg-green-500/10"
               : "border-border bg-secondary/50 hover:bg-secondary"
@@ -400,7 +400,7 @@ export default function BackupsPage() {
       )}
 
       {message && (
-        <div className={`mb-4 shrink-0 rounded-lg px-4 py-3 text-sm ${
+        <div className={`mb-3 shrink-0 rounded-lg px-4 py-3 text-sm ${
           messageType === "error"
             ? "bg-destructive/10 text-destructive"
             : "bg-green-500/10 text-green-400"
@@ -431,7 +431,7 @@ export default function BackupsPage() {
                 )}
               >
                 {/* Row header */}
-                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="flex items-center justify-between gap-3 px-3 py-2">
                   {/* Info */}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
                     <span className="text-sm text-foreground whitespace-nowrap">
@@ -608,9 +608,9 @@ export default function BackupsPage() {
       {/* Restore confirmation dialog */}
       {confirmRestore && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-3 text-lg font-semibold text-foreground">Confirm Restore</h3>
-            <div className="mb-4 space-y-2 text-sm text-muted-foreground">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Confirm Restore</h3>
+            <div className="mb-3 space-y-2 text-sm text-muted-foreground">
               <p>
                 Restore backup from{" "}
                 <span className="font-medium text-foreground">
@@ -649,9 +649,9 @@ export default function BackupsPage() {
       {/* Delete confirmation dialog */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-3 text-lg font-semibold text-foreground">Delete Backup Set</h3>
-            <div className="mb-4 text-sm text-muted-foreground">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Delete Backup Set</h3>
+            <div className="mb-3 text-sm text-muted-foreground">
               <p>
                 Delete backup from{" "}
                 <span className="font-medium text-foreground">
@@ -685,8 +685,8 @@ export default function BackupsPage() {
       {/* Schedule modal */}
       {showSchedule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Backup Schedule</h3>
+          <div className="mx-4 w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="mb-3 text-lg font-semibold text-foreground">Backup Schedule</h3>
             {scheduleEdit && (
               <div className="space-y-4">
                 <label className="flex items-center gap-2 text-sm text-foreground">
@@ -711,7 +711,7 @@ export default function BackupsPage() {
                         type="button"
                         onClick={() => setScheduleEdit({ ...scheduleEdit, cron: p.cron })}
                         className={cn(
-                          "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                          "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
                           scheduleEdit.cron === p.cron
                             ? "bg-primary text-primary-foreground"
                             : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
@@ -754,50 +754,55 @@ export default function BackupsPage() {
                     </div>
                     <div className="flex gap-2 text-center font-mono text-xs">
                       {(scheduleEdit.cron.trim().split(/\s+/).concat(["", "", "", "", ""]).slice(0, 5)).map((v, i) => (
-                        <span key={i} className="flex-1 text-foreground font-semibold">{v || "—"}</span>
+                        <span key={i} className="flex-1 text-foreground font-semibold">{v || "\u2014"}</span>
                       ))}
                     </div>
                     <div className="mt-2 border-t border-border/50 pt-2 text-[11px] text-muted-foreground space-y-0.5">
                       <p><span className="font-mono text-foreground/70">*</span> = any &nbsp; <span className="font-mono text-foreground/70">*/N</span> = every N &nbsp; <span className="font-mono text-foreground/70">1,3,5</span> = list</p>
-                      <p>DoW: <span className="font-mono text-foreground/70">0</span>=Sun <span className="font-mono text-foreground/70">1</span>=Mon … <span className="font-mono text-foreground/70">6</span>=Sat &nbsp; All times UTC</p>
+                      <p>DoW: <span className="font-mono text-foreground/70">0</span>=Sun <span className="font-mono text-foreground/70">1</span>=Mon \u2026 <span className="font-mono text-foreground/70">6</span>=Sat &nbsp; All times UTC</p>
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm text-muted-foreground">
-                    Retention (days)
-                  </label>
-                  <input
-                    type="number"
-                    value={scheduleEdit.retentionDays}
-                    onChange={(e) =>
-                      setScheduleEdit({
-                        ...scheduleEdit,
-                        retentionDays: parseInt(e.target.value, 10) || 30,
-                      })
-                    }
-                    className="w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {ALL_DBS.map((db) => (
-                    <label key={db} className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={scheduleEdit.databases.includes(db)}
-                        onChange={() => {
-                          const dbs = scheduleEdit.databases.includes(db)
-                            ? scheduleEdit.databases.filter((d) => d !== db)
-                            : [...scheduleEdit.databases, db];
-                          setScheduleEdit({ ...scheduleEdit, databases: dbs });
-                        }}
-                        className="rounded border-input"
-                      />
-                      {db}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div>
+                    <label className="mb-1 block text-sm text-muted-foreground">
+                      Retention (days)
                     </label>
-                  ))}
+                    <input
+                      type="number"
+                      value={scheduleEdit.retentionDays}
+                      onChange={(e) =>
+                        setScheduleEdit({
+                          ...scheduleEdit,
+                          retentionDays: parseInt(e.target.value, 10) || 30,
+                        })
+                      }
+                      className="w-full rounded-lg border border-input bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 pt-2">
+                <div>
+                  <label className="mb-1.5 block text-sm text-muted-foreground">Databases</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ALL_DBS.map((db) => (
+                      <label key={db} className="flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={scheduleEdit.databases.includes(db)}
+                          onChange={() => {
+                            const dbs = scheduleEdit.databases.includes(db)
+                              ? scheduleEdit.databases.filter((d) => d !== db)
+                              : [...scheduleEdit.databases, db];
+                            setScheduleEdit({ ...scheduleEdit, databases: dbs });
+                          }}
+                          className="rounded border-input"
+                        />
+                        {db}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 border-t border-border/50 pt-3">
                   {schedule && (
                     <button
                       onClick={async () => {
@@ -811,7 +816,7 @@ export default function BackupsPage() {
                           showMessage("Failed to delete schedule", "error");
                         }
                       }}
-                      className="rounded-lg border border-destructive/30 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+                      className="rounded-lg border border-destructive/30 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
                     >
                       Delete
                     </button>
@@ -819,13 +824,13 @@ export default function BackupsPage() {
                   <div className="flex gap-2 ml-auto">
                     <button
                       onClick={() => setShowSchedule(false)}
-                      className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary"
+                      className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => { handleSaveSchedule(); setShowSchedule(false); }}
-                      className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
                       Save Schedule
                     </button>

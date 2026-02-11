@@ -34,11 +34,11 @@ export function DistributionCharts() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2 min-w-0">
         {[0, 1].map((i) => (
           <div
             key={i}
-            className="flex h-[280px] items-center justify-center rounded-xl glass"
+            className="flex h-[220px] items-center justify-center rounded-xl glass"
           >
             <p className="text-sm text-muted-foreground">Loading...</p>
           </div>
@@ -55,7 +55,7 @@ export function DistributionCharts() {
     chart: {
       type: "pie",
       backgroundColor: "transparent",
-      height: 260,
+      height: 200,
       style: { fontFamily: "inherit" },
     },
     title: { text: undefined },
@@ -75,9 +75,9 @@ export function DistributionCharts() {
       },
     },
     legend: {
-      layout: "vertical",
-      align: "right",
-      verticalAlign: "middle",
+      layout: "horizontal",
+      align: "center",
+      verticalAlign: "bottom",
       itemStyle: { color: "#9ca3af", fontSize: "11px", fontWeight: "400" },
       itemHoverStyle: { color: "#e5e7eb" },
       symbolRadius: 2,
@@ -123,7 +123,7 @@ export function DistributionCharts() {
     chart: {
       type: "pie",
       backgroundColor: "transparent",
-      height: 260,
+      height: 200,
       style: { fontFamily: "inherit" },
     },
     title: { text: undefined },
@@ -143,9 +143,9 @@ export function DistributionCharts() {
       },
     },
     legend: {
-      layout: "vertical",
-      align: "right",
-      verticalAlign: "middle",
+      layout: "horizontal",
+      align: "center",
+      verticalAlign: "bottom",
       itemStyle: { color: "#9ca3af", fontSize: "11px", fontWeight: "400" },
       itemHoverStyle: { color: "#e5e7eb" },
       symbolRadius: 2,
@@ -166,8 +166,8 @@ export function DistributionCharts() {
   const hordePct = totalChars > 0 ? 100 - alliancePct : 0;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-xl glass p-4">
+    <div className="grid gap-3 xl:grid-cols-2 min-w-0">
+      <div className="rounded-xl glass p-3 min-w-0">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Class Distribution
@@ -179,7 +179,7 @@ export function DistributionCharts() {
         <HighchartsReact highcharts={Highcharts} options={classChartOptions} />
       </div>
 
-      <div className="rounded-xl glass p-4">
+      <div className="rounded-xl glass p-3 min-w-0">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Faction / Race

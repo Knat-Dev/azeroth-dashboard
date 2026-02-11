@@ -66,7 +66,7 @@ export function HealthBar({ onMenuClick }: { onMenuClick: () => void }) {
   ];
 
   return (
-    <div className="flex items-center gap-4 border-b border-border glass px-4 md:px-6 py-2.5">
+    <div className="flex items-center gap-4 border-b border-border glass px-3 md:px-4 py-2">
       <button className="md:hidden text-muted-foreground hover:text-foreground transition-colors" onClick={onMenuClick}>
         <Menu className="h-5 w-5" />
       </button>

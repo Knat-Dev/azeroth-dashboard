@@ -85,7 +85,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
@@ -119,8 +119,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Faction Theme Section */}
-      <div className="rounded-xl glass p-4 md:p-6">
-        <div className="mb-5 flex items-center gap-3">
+      <div className="rounded-xl glass p-3 md:p-4">
+        <div className="mb-3 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <Palette className="h-4 w-4 text-primary" />
           </div>
@@ -142,7 +142,7 @@ export default function SettingsPage() {
                 previewFaction(opt.value);
                 updateSetting("faction_theme", opt.value);
               }}
-              className={`flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-all ${
+              className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all ${
                 faction === opt.value
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/30 hover:bg-secondary/50"
@@ -162,8 +162,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Auto-Restart Section */}
-      <div className="rounded-xl glass p-4 md:p-6">
-        <div className="mb-5 flex items-center gap-3">
+      <div className="rounded-xl glass p-3 md:p-4">
+        <div className="mb-3 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <RefreshCw className="h-4 w-4 text-primary" />
           </div>
@@ -177,7 +177,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* Enable Toggle */}
           <div className="flex items-center justify-between">
             <div>
@@ -215,9 +215,9 @@ export default function SettingsPage() {
           </div>
 
           {/* Cooldown */}
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Cooldown (seconds)
               </label>
               <input
@@ -238,7 +238,7 @@ export default function SettingsPage() {
 
             {/* Max Retries */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Max Retries
               </label>
               <input
@@ -259,7 +259,7 @@ export default function SettingsPage() {
 
             {/* Retry Interval */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">
+              <label className="mb-1 block text-sm font-medium text-foreground">
                 Retry Interval (seconds)
               </label>
               <input
@@ -282,8 +282,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Crash Loop Protection Section */}
-      <div className="rounded-xl glass p-4 md:p-6">
-        <div className="mb-5 flex items-center gap-3">
+      <div className="rounded-xl glass p-3 md:p-4">
+        <div className="mb-3 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <Settings className="h-4 w-4 text-yellow-400" />
           </div>
@@ -297,10 +297,10 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {/* Threshold */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">
+            <label className="mb-1 block text-sm font-medium text-foreground">
               Crash Threshold
             </label>
             <input
@@ -321,7 +321,7 @@ export default function SettingsPage() {
 
           {/* Window */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">
+            <label className="mb-1 block text-sm font-medium text-foreground">
               Detection Window (seconds)
             </label>
             <input
@@ -343,8 +343,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Discord Webhooks Section */}
-      <div className="rounded-xl glass p-4 md:p-6">
-        <div className="mb-5 flex items-center gap-3">
+      <div className="rounded-xl glass p-3 md:p-4">
+        <div className="mb-3 flex items-center gap-3">
           <div className="rounded-lg bg-secondary p-2">
             <Bell className="h-4 w-4 text-blue-400" />
           </div>
@@ -358,10 +358,10 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* Webhook URL */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">
+            <label className="mb-1 block text-sm font-medium text-foreground">
               Webhook URL
             </label>
             <input

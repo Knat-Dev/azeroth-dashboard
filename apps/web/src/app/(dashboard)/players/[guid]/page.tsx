@@ -85,18 +85,15 @@ export default function PlayerDetailPage() {
   const hasEquipment = equipment.some((s) => s.item !== null);
 
   return (
-    <div className="space-y-4">
-      {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Players
-      </button>
-
-      {/* Header */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
+    <div className="space-y-3">
+      {/* Header with back button */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
         <div className="flex items-center gap-3">
           <span
             className={`inline-block h-3 w-3 rounded-full ${player.online === 1 ? "bg-green-500" : "bg-muted-foreground/40"}`}
@@ -139,12 +136,12 @@ export default function PlayerDetailPage() {
       </div>
 
       {/* Info row */}
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="grid gap-2 md:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-3">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Character Info
           </h3>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
@@ -170,11 +167,11 @@ export default function PlayerDetailPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card p-3">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Location
           </h3>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="flex items-center gap-2 text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5" />
@@ -211,43 +208,45 @@ export default function PlayerDetailPage() {
       </div>
 
       {/* Stats + Equipment side by side */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
-        {/* Left: Stats */}
-        <div className="flex flex-col gap-3">
-          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Heart className="h-3.5 w-3.5 text-red-400" />
-              Health
+      <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
+        {/* Left: Stats — single card with 2x2 grid */}
+        <div className="rounded-xl border border-border bg-card p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Heart className="h-3.5 w-3.5 text-red-400" />
+                Health
+              </div>
+              <p className="text-base font-bold text-foreground">{player.health.toLocaleString()}</p>
             </div>
-            <p className="mt-1 text-lg font-bold text-foreground">{player.health.toLocaleString()}</p>
-          </div>
-          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Shield className="h-3.5 w-3.5 text-blue-400" />
-              Power
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3.5 w-3.5 text-blue-400" />
+                Power
+              </div>
+              <p className="text-base font-bold text-foreground">{player.power1.toLocaleString()}</p>
             </div>
-            <p className="mt-1 text-lg font-bold text-foreground">{player.power1.toLocaleString()}</p>
-          </div>
-          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Swords className="h-3.5 w-3.5 text-orange-400" />
-              Total Kills
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Swords className="h-3.5 w-3.5 text-orange-400" />
+                Total Kills
+              </div>
+              <p className="text-base font-bold text-foreground">{player.totalKills.toLocaleString()}</p>
             </div>
-            <p className="mt-1 text-lg font-bold text-foreground">{player.totalKills.toLocaleString()}</p>
-          </div>
-          <div className="flex-1 flex flex-col justify-center rounded-xl border border-border bg-card p-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Trophy className="h-3.5 w-3.5 text-yellow-400" />
-              Honor Points
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Trophy className="h-3.5 w-3.5 text-yellow-400" />
+                Honor Points
+              </div>
+              <p className="text-base font-bold text-foreground">{player.totalHonorPoints.toLocaleString()}</p>
             </div>
-            <p className="mt-1 text-lg font-bold text-foreground">{player.totalHonorPoints.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Right: Equipment */}
         {hasEquipment && (
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="mb-3 flex items-center gap-2">
+        <div className="rounded-xl border border-border bg-card p-3">
+          <div className="mb-2 flex items-center gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Equipment
             </h3>
@@ -267,8 +266,8 @@ export default function PlayerDetailPage() {
               return item ? (
                 <ItemTooltip key={slotIdx} item={item}>
                   {(anchorRef) => (
-                    <div className="py-1">
-                      <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors cursor-default">
+                    <div className="py-0.5">
+                      <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1.5 text-sm hover:bg-secondary/50 transition-colors cursor-default">
                         <span className="text-muted-foreground">{label}</span>
                         <span
                           ref={anchorRef}
@@ -282,8 +281,8 @@ export default function PlayerDetailPage() {
                   )}
                 </ItemTooltip>
               ) : (
-                <div key={slotIdx} className="py-1">
-                  <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm">
+                <div key={slotIdx} className="py-0.5">
+                  <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1.5 text-sm">
                     <span className="text-muted-foreground">{label}</span>
                     <span className="text-muted-foreground/50">Empty</span>
                   </div>
@@ -292,7 +291,7 @@ export default function PlayerDetailPage() {
             };
             return (
               <>
-                <div className="-my-1 grid sm:grid-cols-2">
+                <div className="-my-0.5 grid sm:grid-cols-2">
                   <div className="flex flex-col">
                     {LEFT_SLOTS.map(renderSlot)}
                   </div>
@@ -300,7 +299,7 @@ export default function PlayerDetailPage() {
                     {RIGHT_SLOTS.map(renderSlot)}
                   </div>
                 </div>
-                <div className="-my-1 mt-1 grid grid-cols-1 sm:grid-cols-3">
+                <div className="-my-0.5 grid grid-cols-1 sm:grid-cols-3">
                   {BOTTOM_SLOTS.map(renderSlot)}
                 </div>
               </>

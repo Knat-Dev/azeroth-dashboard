@@ -112,7 +112,7 @@ export default function PlayersPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header — shrinks */}
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Online Players</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -146,7 +146,7 @@ export default function PlayersPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -172,31 +172,31 @@ export default function PlayersPage() {
             <table className="w-full min-w-[900px] text-sm">
               <thead className="shrink-0">
                 <tr className="border-b border-border bg-secondary/50">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Level
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Class
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Race
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Faction
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Guild
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Gold
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Play Time
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Zone
                   </th>
                 </tr>
@@ -213,11 +213,11 @@ export default function PlayersPage() {
                         onClick={() => router.push(`/players/${player.name}`)}
                         className="border-b border-border/50 last:border-0 text-sm text-foreground hover:bg-secondary/30 transition-colors cursor-pointer"
                       >
-                        <td className="px-4 py-3 font-medium text-primary">
+                        <td className="px-3 py-2 font-medium text-primary">
                           {player.name}
                         </td>
-                        <td className="px-4 py-3">{player.level}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2">{player.level}</td>
+                        <td className="px-3 py-2">
                           <div className="flex items-center gap-2">
                             <span
                               className="inline-block h-2.5 w-2.5 rounded-full"
@@ -232,8 +232,8 @@ export default function PlayersPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3">{getRaceName(player.race)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2">{getRaceName(player.race)}</td>
+                        <td className="px-3 py-2">
                           {faction === "Alliance" ? (
                             <span className="inline-block rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-400">
                               Alliance
@@ -246,16 +246,16 @@ export default function PlayersPage() {
                             <span className="text-muted-foreground">Unknown</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
+                        <td className="px-3 py-2 text-muted-foreground">
                           {player.guildName || "—"}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
+                        <td className="px-3 py-2 text-muted-foreground">
                           {player.money != null ? formatGold(player.money) : "—"}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
+                        <td className="px-3 py-2 text-muted-foreground">
                           {player.totaltime != null ? formatPlaytime(player.totaltime) : "—"}
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">
+                        <td className="px-3 py-2 text-muted-foreground">
                           {getZoneName(player.zone)}
                         </td>
                       </tr>
@@ -268,7 +268,7 @@ export default function PlayersPage() {
 
           {/* Pagination — shrinks */}
           {totalPages > 1 && (
-            <div className="mt-3 flex shrink-0 items-center justify-between">
+            <div className="mt-2 flex shrink-0 items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </p>

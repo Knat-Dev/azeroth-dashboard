@@ -19,7 +19,7 @@ export default function AccountsPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             Account Management
@@ -50,7 +50,7 @@ export default function AccountsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -73,12 +73,12 @@ export default function AccountsPage() {
             <table className="w-full min-w-[700px] text-sm">
               <thead className="shrink-0">
                 <tr className="border-b border-border bg-secondary/50">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Username</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">GM Level</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Last Login</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">ID</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Username</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">GM Level</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Last Login</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
                 </tr>
               </thead>
             </table>
@@ -90,10 +90,10 @@ export default function AccountsPage() {
                       key={account.id}
                       className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30"
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{account.id}</td>
-                      <td className="px-4 py-3 font-medium text-foreground">{account.username}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{account.email || "-"}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{account.id}</td>
+                      <td className="px-3 py-2 font-medium text-foreground">{account.username}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{account.email || "-"}</td>
+                      <td className="px-3 py-2">
                         {account.gmLevel > 0 ? (
                           <span className="inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                             GM {account.gmLevel}
@@ -102,8 +102,8 @@ export default function AccountsPage() {
                           <span className="text-muted-foreground">Player</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{formatDate(account.lastLogin, "Never")}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-muted-foreground">{formatDate(account.lastLogin, "Never")}</td>
+                      <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openResetModal(account.id)}
@@ -129,7 +129,7 @@ export default function AccountsPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-3 flex shrink-0 items-center justify-between">
+            <div className="mt-2 flex shrink-0 items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </p>
@@ -157,8 +157,8 @@ export default function AccountsPage() {
       {/* Ban Modal */}
       {showBanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="mb-3 text-lg font-semibold text-foreground">
               Ban Account #{banningId}
             </h3>
             <div className="space-y-3">
@@ -186,17 +186,17 @@ export default function AccountsPage() {
                 />
               </div>
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={closeBanModal}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBan}
                 disabled={!banReason.trim()}
-                className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
               >
                 Confirm Ban
               </button>
@@ -208,13 +208,13 @@ export default function AccountsPage() {
       {/* Reset Password Modal */}
       {showResetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="mb-3 text-lg font-semibold text-foreground">
               Reset Password — Account #{resetId}
             </h3>
 
             {resetError && (
-              <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <div className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {resetError}
               </div>
             )}
@@ -251,17 +251,17 @@ export default function AccountsPage() {
                 Password must be between 6 and 16 characters
               </p>
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={closeResetModal}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleResetPassword}
                 disabled={!resetPassword.trim() || !resetConfirm.trim() || resetLoading}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 {resetLoading ? "Resetting..." : "Reset Password"}
               </button>
@@ -273,11 +273,11 @@ export default function AccountsPage() {
       {/* Create Account Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Create Account</h3>
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="mb-3 text-lg font-semibold text-foreground">Create Account</h3>
 
             {createError && (
-              <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              <div className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {createError}
               </div>
             )}
@@ -334,17 +334,17 @@ export default function AccountsPage() {
                 </select>
               </div>
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={closeCreateModal}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
                 disabled={!createUsername.trim() || !createPassword.trim() || createLoading}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 {createLoading ? "Creating..." : "Create"}
               </button>

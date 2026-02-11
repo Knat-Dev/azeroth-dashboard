@@ -124,8 +124,8 @@ export function PlayerChart() {
   };
 
   return (
-    <div className="rounded-xl glass p-4">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="rounded-xl glass p-3">
+      <div className="mb-1.5 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Player Count
         </h2>

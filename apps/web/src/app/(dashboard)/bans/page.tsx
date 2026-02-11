@@ -173,7 +173,7 @@ export default function BansPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Ban Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -212,7 +212,7 @@ export default function BansPage() {
       </div>
 
       {/* Tab Toggle */}
-      <div className="mb-4 flex gap-1 rounded-lg border border-border bg-secondary/50 p-1 self-start">
+      <div className="mb-3 flex gap-1 rounded-lg border border-border bg-secondary/50 p-1 self-start">
         <button
           onClick={() => setTab("account")}
           className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -237,7 +237,7 @@ export default function BansPage() {
       {tab === "account" && (
         <>
           {error && (
-            <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>
+            <div className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
           )}
 
           {loading ? (
@@ -257,12 +257,12 @@ export default function BansPage() {
                 <table className="w-full min-w-[700px] text-sm">
                   <thead className="shrink-0">
                     <tr className="border-b border-border bg-secondary/50">
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Account</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Reason</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Banned By</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Ban Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Expires</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Account</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Reason</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Banned By</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Ban Date</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Expires</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                 </table>
@@ -271,21 +271,21 @@ export default function BansPage() {
                     <tbody>
                       {bans.map((ban) => (
                         <tr key={ban.id} className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30">
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-2">
                             <span className="font-medium text-foreground">{ban.username}</span>
                             <span className="ml-2 font-mono text-xs text-muted-foreground">#{ban.accountId}</span>
                           </td>
-                          <td className="px-4 py-3 text-foreground max-w-xs truncate">{ban.reason}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{ban.bannedBy}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{formatDate(ban.banDate)}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-2 text-foreground max-w-xs truncate">{ban.reason}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{ban.bannedBy}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{formatDate(ban.banDate)}</td>
+                          <td className="px-3 py-2">
                             {isPermanent(ban.unbanDate) ? (
                               <span className="inline-block rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">Permanent</span>
                             ) : (
                               <span className="text-muted-foreground">{formatDate(ban.unbanDate)}</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-3 py-2 text-right">
                             <button
                               onClick={() => handleUnban(ban.accountId)}
                               disabled={unbanning === ban.accountId}
@@ -302,7 +302,7 @@ export default function BansPage() {
               </div>
 
               {totalPages > 1 && (
-                <div className="mt-3 flex shrink-0 items-center justify-between">
+                <div className="mt-2 flex shrink-0 items-center justify-between">
                   <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>
                   <div className="flex gap-2">
                     <button onClick={() => fetchBans(page - 1)} disabled={page <= 1} className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-secondary disabled:opacity-30 transition-colors">Previous</button>
@@ -319,7 +319,7 @@ export default function BansPage() {
       {tab === "ip" && (
         <>
           {ipError && (
-            <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{ipError}</div>
+            <div className="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{ipError}</div>
           )}
 
           {ipLoading ? (
@@ -339,12 +339,12 @@ export default function BansPage() {
                 <table className="w-full min-w-[600px] text-sm">
                   <thead className="shrink-0">
                     <tr className="border-b border-border bg-secondary/50">
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">IP Address</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Reason</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Banned By</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Ban Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Expires</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">IP Address</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Reason</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Banned By</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Ban Date</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Expires</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                 </table>
@@ -353,18 +353,18 @@ export default function BansPage() {
                     <tbody>
                       {ipBans.map((ban) => (
                         <tr key={ban.ip} className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/30">
-                          <td className="px-4 py-3 font-mono font-medium text-foreground">{ban.ip}</td>
-                          <td className="px-4 py-3 text-foreground max-w-xs truncate">{ban.reason}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{ban.bannedBy}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{formatDate(ban.banDate)}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-2 font-mono font-medium text-foreground">{ban.ip}</td>
+                          <td className="px-3 py-2 text-foreground max-w-xs truncate">{ban.reason}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{ban.bannedBy}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{formatDate(ban.banDate)}</td>
+                          <td className="px-3 py-2">
                             {isPermanent(ban.unbanDate) ? (
                               <span className="inline-block rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">Permanent</span>
                             ) : (
                               <span className="text-muted-foreground">{ban.unbanDate ? formatDate(ban.unbanDate) : "Permanent"}</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-3 py-2 text-right">
                             <button
                               onClick={() => handleRemoveIpBan(ban.ip)}
                               disabled={removingIp === ban.ip}
@@ -381,7 +381,7 @@ export default function BansPage() {
               </div>
 
               {ipTotalPages > 1 && (
-                <div className="mt-3 flex shrink-0 items-center justify-between">
+                <div className="mt-2 flex shrink-0 items-center justify-between">
                   <p className="text-sm text-muted-foreground">Page {ipPage} of {ipTotalPages}</p>
                   <div className="flex gap-2">
                     <button onClick={() => fetchIpBans(ipPage - 1)} disabled={ipPage <= 1} className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground hover:bg-secondary disabled:opacity-30 transition-colors">Previous</button>
@@ -397,8 +397,8 @@ export default function BansPage() {
       {/* IP Ban Modal */}
       {showIpBanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Ban IP Address</h3>
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="mb-3 text-lg font-semibold text-foreground">Ban IP Address</h3>
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-sm font-medium text-foreground">IP Address <span className="text-destructive">*</span></label>
@@ -432,17 +432,17 @@ export default function BansPage() {
                 />
               </div>
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => { setShowIpBanModal(false); setNewIp(""); setNewIpReason(""); setNewIpDuration(""); }}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-secondary transition-colors"
+                className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateIpBan}
                 disabled={!newIp.trim() || !newIpReason.trim()}
-                className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 transition-colors"
               >
                 Ban IP
               </button>

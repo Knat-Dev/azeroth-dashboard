@@ -96,7 +96,7 @@ export default function DashboardLayout({
       {!pinned && <div className="hidden md:block w-16 shrink-0" />}
       <div className="flex flex-1 flex-col overflow-hidden">
         <HealthBar onMenuClick={() => setMobileOpen(true)} />
-        <main key={pathname} className="page-enter flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
+        <main key={pathname} className="page-enter flex-1 overflow-y-auto px-3 py-2 md:px-4 md:py-3">
           {children}
         </main>
       </div>
