@@ -65,22 +65,22 @@ function ConfirmDialog({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-sm rounded-xl glass p-6 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
         <div className="mb-4 flex items-center gap-3">
           <div className="rounded-lg bg-yellow-500/10 p-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
           </div>
           <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         </div>
-        <p className="mb-6 text-sm text-muted-foreground">{message}</p>
-        <div className="flex gap-3">
+        <p className="text-sm text-muted-foreground">{message}</p>
+        <div className="mt-5 flex justify-end gap-2">
           <button onClick={onCancel} disabled={loading}
-            className="flex-1 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50">
+            className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50">
             Cancel
           </button>
           <button onClick={onConfirm} disabled={loading}
-            className="flex-1 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50">
+            className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50">
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Restarting...
@@ -101,7 +101,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
+        <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>
       )}
 
       {/* Row 1: Health indicators */}

@@ -289,7 +289,7 @@ export function ContainerStatsChart() {
   return (
     <div className="rounded-xl glass p-4">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Container Resources
         </h2>
         <div className="flex gap-1">

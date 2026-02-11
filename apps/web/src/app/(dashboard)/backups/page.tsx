@@ -296,7 +296,7 @@ export default function BackupsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header bar */}
-      <div className="mb-6 flex shrink-0 items-center justify-between">
+      <div className="mb-4 flex shrink-0 items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Database Backups</h1>
         <div className="flex items-center gap-2">
           <button
@@ -607,8 +607,8 @@ export default function BackupsPage() {
 
       {/* Restore confirmation dialog */}
       {confirmRestore && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
             <h3 className="mb-3 text-lg font-semibold text-foreground">Confirm Restore</h3>
             <div className="mb-4 space-y-2 text-sm text-muted-foreground">
               <p>
@@ -648,8 +648,8 @@ export default function BackupsPage() {
 
       {/* Delete confirmation dialog */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
             <h3 className="mb-3 text-lg font-semibold text-foreground">Delete Backup Set</h3>
             <div className="mb-4 text-sm text-muted-foreground">
               <p>
@@ -684,8 +684,8 @@ export default function BackupsPage() {
 
       {/* Schedule modal */}
       {showSchedule && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">Backup Schedule</h3>
             {scheduleEdit && (
               <div className="space-y-4">

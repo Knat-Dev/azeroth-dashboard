@@ -267,39 +267,40 @@ export default function PlayerDetailPage() {
               return item ? (
                 <ItemTooltip key={slotIdx} item={item}>
                   {(anchorRef) => (
-                    <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors cursor-default">
-                      <span className="text-muted-foreground">{label}</span>
-                      <span
-                        ref={anchorRef}
-                        className="truncate ml-2 text-xs font-medium"
-                        style={{ color: getItemQualityColor(item.quality) }}
-                      >
-                        {item.name}
-                      </span>
+                    <div className="py-1">
+                      <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors cursor-default">
+                        <span className="text-muted-foreground">{label}</span>
+                        <span
+                          ref={anchorRef}
+                          className="truncate ml-2 text-xs font-medium"
+                          style={{ color: getItemQualityColor(item.quality) }}
+                        >
+                          {item.name}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </ItemTooltip>
               ) : (
-                <div
-                  key={slotIdx}
-                  className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm"
-                >
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="text-muted-foreground/50">Empty</span>
+                <div key={slotIdx} className="py-1">
+                  <div className="flex items-center justify-between rounded-lg border border-border/50 bg-secondary/30 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="text-muted-foreground/50">Empty</span>
+                  </div>
                 </div>
               );
             };
             return (
               <>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="flex flex-col gap-2">
+                <div className="-my-1 grid sm:grid-cols-2">
+                  <div className="flex flex-col">
                     {LEFT_SLOTS.map(renderSlot)}
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col">
                     {RIGHT_SLOTS.map(renderSlot)}
                   </div>
                 </div>
-                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="-my-1 mt-1 grid grid-cols-1 sm:grid-cols-3">
                   {BOTTOM_SLOTS.map(renderSlot)}
                 </div>
               </>

@@ -397,7 +397,7 @@ export default function BansPage() {
       {/* IP Ban Modal */}
       {showIpBanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">Ban IP Address</h3>
             <div className="space-y-3">
               <div>

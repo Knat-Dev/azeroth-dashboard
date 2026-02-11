@@ -157,7 +157,7 @@ export default function AccountsPage() {
       {/* Ban Modal */}
       {showBanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">
               Ban Account #{banningId}
             </h3>
@@ -208,7 +208,7 @@ export default function AccountsPage() {
       {/* Reset Password Modal */}
       {showResetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">
               Reset Password — Account #{resetId}
             </h3>
@@ -273,7 +273,7 @@ export default function AccountsPage() {
       {/* Create Account Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold text-foreground">Create Account</h3>
 
             {createError && (

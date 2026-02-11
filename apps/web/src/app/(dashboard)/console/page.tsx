@@ -123,7 +123,7 @@ export default function ConsolePage() {
 
       {/* Error banner */}
       {error && (
-        <div className="mb-3 rounded-lg bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+        <div className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
